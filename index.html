@@ -1,0 +1,2485 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>詩晴自己計糖 - 韓系兒童胰島素計算器</title>
+    
+    <!-- PWA 核心設定與本地圖示 -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    
+    <!-- Web App 離線與安裝設定 (PWA Standalone Support) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="詩晴自己計糖">
+    <meta name="theme-color" content="#FF8FA3">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <style>
+        :root {
+            /* 韓系粉彩主題配色 */
+            --k-pink: #FF8FA3;
+            --k-pink-dark: #E65A75;
+            --k-mint: #80CBC4;
+            --k-mint-dark: #00897B;
+            --k-purple: #B39DDB;
+            --k-purple-dark: #7E57C2;
+            --k-yellow: #FFE082;
+            --k-yellow-dark: #FFA000;
+            --k-blue: #81D4FA;
+            --k-blue-dark: #0288D1;
+            --k-bg: #FFF5F7;
+            --k-card-bg: #FFFFFF;
+            --text-color: #4A4A4A;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang HK", "SF Pro Text", "Chalkboard SE", "Comic Sans MS", sans-serif;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--k-bg);
+            color: var(--text-color);
+            padding-bottom: max(40px, env(safe-area-inset-bottom));
+            background-image: radial-gradient(#FFD6E0 10%, transparent 11%), radial-gradient(#E8F5E9 10%, transparent 11%);
+            background-size: 30px 30px;
+            background-position: 0 0, 15px 15px;
+            touch-action: manipulation;
+            overscroll-behavior-y: none;
+        }
+
+        /* 全局滾動條美化 */
+        ::-webkit-scrollbar {
+            width: 7px;
+            height: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.04);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #FF8FA3;
+            border-radius: 10px;
+        }
+
+        /* 滾動提示標記 */
+        .scroll-hint {
+            font-size: 0.82rem;
+            color: #00796B;
+            font-weight: 800;
+            text-align: center;
+            padding: 5px 8px;
+            background: #E0F2F1;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        /* 韓系頂部 Header - 相容劉海屏與安全區域 */
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: linear-gradient(135deg, #FF9EAA, #FF758F);
+            color: white;
+            text-align: center;
+            padding-top: max(16px, env(safe-area-inset-top));
+            padding-bottom: 16px;
+            padding-left: 15px;
+            padding-right: 15px;
+            box-shadow: 0 6px 20px rgba(255, 117, 143, 0.3);
+            border-bottom-left-radius: 28px;
+            border-bottom-right-radius: 28px;
+        }
+
+        .header-title {
+            font-size: clamp(1.3rem, 5vw, 1.65rem);
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .header-subtitle {
+            font-size: clamp(0.82rem, 3.2vw, 0.9rem);
+            opacity: 0.95;
+            margin-top: 3px;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 16px auto;
+            padding: 0 14px;
+        }
+
+        /* 韓系軟糖風格卡片 */
+        .card {
+            background: var(--k-card-bg);
+            border-radius: 24px;
+            padding: 18px 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 10px 25px rgba(255, 143, 163, 0.12);
+            border: 3.5px solid #FFE4E8;
+            transition: transform 0.2s ease;
+        }
+
+        .card-title {
+            font-size: clamp(1.15rem, 4.5vw, 1.3rem);
+            color: #D81B60;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 900;
+            flex-wrap: wrap;
+        }
+
+        /* 3大核心區域色彩風格 */
+        .card-bg-input {
+            background: linear-gradient(135deg, #FFF0F3 0%, #FFE4E8 100%);
+            border: 3.5px solid #FFB3C1;
+        }
+        .card-food-select {
+            background: linear-gradient(135deg, #E0F2F1 0%, #B2DFDB 100%);
+            border: 3.5px solid #80CBC4;
+        }
+        .card-cart-summary {
+            background: linear-gradient(135deg, #FFFDE7 0%, #FFF59D 100%);
+            border: 3.5px solid #FFE082;
+        }
+
+        label {
+            font-weight: 800;
+            display: block;
+            margin-top: 10px;
+            margin-bottom: 6px;
+            font-size: clamp(0.95rem, 3.8vw, 1.05rem);
+            color: #37474F;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 3px solid #FFB3C1;
+            border-radius: 18px;
+            font-size: 16px;
+            font-weight: bold;
+            outline: none;
+            background-color: #FFFFFF;
+            color: #263238;
+            transition: all 0.2s ease;
+        }
+
+        ::placeholder {
+            color: rgba(160, 160, 160, 0.75) !important;
+            font-weight: 600;
+            opacity: 1;
+            text-align: center;
+        }
+
+        input:focus {
+            border-color: #FF4081;
+            box-shadow: 0 0 12px rgba(255, 64, 129, 0.25);
+        }
+
+        #adminPasswordInput {
+            text-align: center;
+            letter-spacing: normal;
+        }
+        #adminPasswordInput:not(:placeholder-shown) {
+            letter-spacing: 6px;
+        }
+
+        .btn-korean-3d {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 14px 12px;
+            border-radius: 26px;
+            font-size: clamp(0.95rem, 4vw, 1.15rem);
+            font-weight: 900;
+            color: #FFFFFF;
+            cursor: pointer;
+            outline: none;
+            border: 3.5px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 7px 0 var(--btn-shadow), 0 10px 18px rgba(0, 0, 0, 0.12);
+            transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+            text-shadow: 0 1.5px 3px rgba(0, 0, 0, 0.25);
+            user-select: none;
+            margin-bottom: 14px;
+            background: var(--btn-bg);
+            text-decoration: none;
+            flex-shrink: 0;
+            word-break: break-word;
+            text-align: center;
+        }
+
+        .btn-home-align {
+            justify-content: flex-start;
+            padding-left: clamp(14px, 10vw, 45px);
+            white-space: nowrap;
+        }
+
+        .btn-icon-box {
+            width: 30px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            font-size: 1.4rem;
+        }
+
+        .btn-korean-3d::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 18px;
+            width: 32px;
+            height: 9px;
+            background: rgba(255, 255, 255, 0.65);
+            border-radius: 20px;
+            transform: rotate(-8deg);
+            pointer-events: none;
+        }
+
+        .btn-korean-3d:active {
+            transform: translateY(5px);
+            box-shadow: 0 2px 0 var(--btn-shadow), 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-k-pink {
+            --btn-bg: linear-gradient(180deg, #FF9EAA 0%, #FF5C77 100%);
+            --btn-shadow: #D83A56;
+        }
+        .btn-k-mint {
+            --btn-bg: linear-gradient(180deg, #4DB6AC 0%, #00897B 100%);
+            --btn-shadow: #005B4F;
+        }
+        .btn-k-purple {
+            --btn-bg: linear-gradient(180deg, #B39DDB 0%, #7E57C2 100%);
+            --btn-shadow: #512DA8;
+        }
+        .btn-k-yellow {
+            --btn-bg: linear-gradient(180deg, #FFCA28 0%, #FF8F00 100%);
+            --btn-shadow: #C76A00;
+        }
+        .btn-k-blue {
+            --btn-bg: linear-gradient(180deg, #4FC3F7 0%, #0288D1 100%);
+            --btn-shadow: #01579B;
+        }
+        .btn-k-grey {
+            --btn-bg: linear-gradient(180deg, #B0BEC5 0%, #78909C 100%);
+            --btn-shadow: #455A64;
+        }
+        .btn-wa {
+            --btn-bg: linear-gradient(180deg, #25D366 0%, #128C7E 100%);
+            --btn-shadow: #075E54;
+        }
+        .btn-email {
+            --btn-bg: linear-gradient(180deg, #107C41 0%, #004D40 100%);
+            --btn-shadow: #002B24;
+        }
+
+        .btn-small-danger {
+            background: linear-gradient(180deg, #FF5252 0%, #D32F2F 100%);
+            color: white;
+            border: 2px solid #FFFFFF;
+            padding: 6px 10px;
+            border-radius: 14px;
+            font-size: 0.85rem;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #9A0007;
+            transition: all 0.1s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+            user-select: none;
+        }
+        .btn-small-danger:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #9A0007;
+        }
+
+        .select-custom-wrapper {
+            position: relative;
+            width: 100%;
+            margin-top: 8px;
+        }
+        .select-custom-wrapper::after {
+            content: '▼';
+            font-size: 0.95rem;
+            color: #004D40;
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+
+        #restaurantSelect {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            padding: 12px 38px 12px 16px;
+            border: 3.5px solid #80CBC4;
+            border-radius: 28px;
+            font-size: clamp(1rem, 3.8vw, 1.25rem);
+            font-weight: 900;
+            background: #FFFFFF;
+            color: #00796B;
+            text-align: center;
+            cursor: pointer;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+
+        #restaurantSelect:focus {
+            border-color: #00897B;
+            box-shadow: 0 0 14px rgba(0, 137, 123, 0.25);
+            outline: none;
+        }
+
+        #restaurantSelect option {
+            font-weight: 900;
+            padding: 12px;
+            background-color: #FFFFFF;
+            color: #37474F;
+            font-size: 1rem;
+        }
+
+        .bg-input-group {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .btn-no-bg {
+            background: linear-gradient(180deg, #FFF3E0 0%, #FFE0B2 100%);
+            color: #E65100;
+            border: 2px solid #FFB74D;
+            padding: 10px 10px;
+            font-size: clamp(0.85rem, 3vw, 0.95rem);
+            font-weight: 900;
+            border-radius: 16px;
+            cursor: pointer;
+            white-space: nowrap;
+            box-shadow: 0 4px 0 #F57C00;
+            transition: all 0.1s ease;
+            flex-shrink: 0;
+        }
+        .btn-no-bg:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #F57C00;
+        }
+        .btn-no-bg.active {
+            background: linear-gradient(180deg, #FF7043 0%, #E64A19 100%);
+            color: white;
+            box-shadow: 0 4px 0 #BF360C;
+        }
+
+        .alert-box {
+            border-radius: 22px !important;
+            margin-top: 14px;
+            display: none;
+            animation: pulse 1.5s infinite;
+            overflow: hidden;
+            word-break: break-word;
+        }
+
+        .alert-low-bg {
+            background: #FFF0F2 !important;
+            border: 4px solid #D32F2F !important;
+            color: #270000 !important;
+            box-shadow: 0 8px 22px rgba(211, 47, 47, 0.25) !important;
+        }
+        .alert-low-header {
+            background: linear-gradient(135deg, #E53935, #C62828);
+            color: #FFFFFF;
+            padding: 10px 12px;
+            font-size: 1.1rem;
+            font-weight: 900;
+            text-align: center;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+        }
+        .alert-low-body {
+            padding: 14px 12px;
+        }
+
+        .alert-high-bg {
+            background: #FFFDF0 !important;
+            border: 4px solid #F57C00 !important;
+            color: #3E2723 !important;
+            box-shadow: 0 8px 22px rgba(245, 124, 0, 0.25) !important;
+        }
+        .alert-high-header {
+            background: linear-gradient(135deg, #FB8C00, #EF6C00);
+            color: #FFFFFF;
+            padding: 10px 12px;
+            font-size: 1.1rem;
+            font-weight: 900;
+            text-align: center;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+        }
+        .alert-high-body {
+            padding: 14px 12px;
+        }
+
+        .alert-emergency-bg {
+            background: #FFF5F5 !important;
+            border: 4px solid #D32F2F !important;
+            color: #270000 !important;
+            box-shadow: 0 10px 25px rgba(211, 47, 47, 0.35) !important;
+        }
+        .alert-emergency-header {
+            background: linear-gradient(135deg, #D32F2F, #B71C1C);
+            color: #FFFFFF;
+            padding: 10px 12px;
+            font-size: 1.1rem;
+            font-weight: 900;
+            text-align: center;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+        }
+        .alert-emergency-body {
+            padding: 14px 12px;
+        }
+
+        .alert-step-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .alert-step-list li {
+            position: relative;
+            padding-left: 28px;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+            font-weight: 800;
+            line-height: 1.45;
+            color: #37474F;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+        .alert-step-list li:last-child {
+            margin-bottom: 0;
+        }
+        .alert-step-list li::before {
+            content: attr(data-step);
+            position: absolute;
+            left: 0;
+            top: 2px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            font-size: 0.8rem;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .alert-low-bg .alert-step-list li::before {
+            background: #D32F2F;
+            color: #FFFFFF;
+        }
+        .alert-high-bg .alert-step-list li::before {
+            background: #F57C00;
+            color: #FFFFFF;
+        }
+        .alert-emergency-bg .alert-step-list li::before {
+            background: #D32F2F;
+            color: #FFFFFF;
+        }
+
+        .alert-emergency-title {
+            font-size: 1.15rem;
+            color: #B71C1C;
+            font-weight: 900;
+            margin-bottom: 6px;
+            text-align: center;
+            line-height: 1.3;
+        }
+        .alert-emergency-subtitle {
+            font-size: 0.98rem;
+            color: #C62828;
+            font-weight: 900;
+            background: #FFEBEE;
+            padding: 8px 10px;
+            border-radius: 12px;
+            border: 2px solid #FFCDD2;
+            text-align: center;
+            margin-bottom: 12px;
+            line-height: 1.3;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.015); }
+            100% { transform: scale(1); }
+        }
+
+        .food-select-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            border: 1px dashed #80CBC4;
+            background: #FFFFFF;
+            border-radius: 16px;
+            margin-bottom: 8px;
+            gap: 8px;
+        }
+
+        .food-info {
+            flex: 1;
+            min-width: 0;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        .stepper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .btn-step {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
+            background-color: #26A69A;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 3px 0 #00695C;
+            flex-shrink: 0;
+        }
+
+        .btn-step:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #00695C;
+        }
+
+        .qty-val {
+            font-weight: 900;
+            font-size: 1.15rem;
+            min-width: 20px;
+            text-align: center;
+            color: #004D40;
+        }
+
+        .cart-list {
+            background: #FFFFFF;
+            padding: 8px 12px;
+            border-radius: 16px;
+            margin-top: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            border: 2px solid #FFE082;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-card {
+            background: white;
+            border-radius: 28px;
+            padding: 20px 16px;
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+            border: 4px solid #FF8FA3;
+            animation: popIn 0.22s ease-out;
+            max-height: 88vh;
+            overflow-y: auto;
+        }
+
+        #modalConfirmMsg, #modalAlertMsg {
+            white-space: pre-line;
+            line-height: 1.5;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.85); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .snack-box {
+            background: #FFF8E1;
+            border: 3px solid #FFA000;
+            border-radius: 20px;
+            padding: 16px 14px;
+            margin-top: 14px;
+            text-align: left;
+            word-break: break-word;
+            box-shadow: 0 6px 16px rgba(255, 160, 0, 0.18);
+        }
+        .snack-title {
+            font-size: 1.25rem;
+            font-weight: 900;
+            color: #D84315;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border-bottom: 2px dashed #FFCA28;
+            padding-bottom: 6px;
+        }
+        .snack-item {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: #212121;
+            margin-top: 8px;
+            padding: 6px 10px;
+            background: #FFFFFF;
+            border-radius: 12px;
+            border: 1.5px solid #FFE082;
+            line-height: 1.45;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: baseline;
+            gap: 4px;
+        }
+
+        .rule-edit-card {
+            background: #FFFFFF;
+            border: 2px solid #B39DDB;
+            border-radius: 18px;
+            padding: 12px;
+            margin-bottom: 12px;
+            text-align: left;
+            word-break: break-word;
+            box-shadow: 0 4px 10px rgba(179, 157, 219, 0.15);
+        }
+
+        .equal-share-group, .equal-btn-group {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            margin: 14px 0 16px 0;
+            flex-wrap: wrap;
+        }
+        .equal-share-group .btn-korean-3d,
+        .equal-btn-group .btn-korean-3d {
+            flex: 1 1 120px;
+            min-width: 0;
+            margin-bottom: 0;
+            padding: 12px 6px;
+            font-size: clamp(0.88rem, 3.5vw, 1.05rem);
+            white-space: nowrap;
+        }
+
+        @media (max-width: 380px) {
+            .equal-share-group, .equal-btn-group {
+                gap: 6px;
+            }
+            .equal-share-group .btn-korean-3d,
+            .equal-btn-group .btn-korean-3d {
+                font-size: 0.88rem;
+                padding: 10px 4px;
+                gap: 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 頂部韓系 Banner -->
+    <header>
+        <div class="header-title">🍭 詩晴自己計糖 💉</div>
+        <div class="header-subtitle">兒童胰島素注射計算助理</div>
+    </header>
+
+    <div class="container">
+
+        <!-- ==================== HOME 韓國風首頁 ==================== -->
+        <div id="tab-home" class="tab-content active">
+            <div class="card" style="text-align: center; background: linear-gradient(135deg, #FFF0F3 0%, #FFE4E8 100%); border-color: #FFB3C1;">
+                <h2 style="color: #D81B60; font-size: clamp(1.25rem, 4.5vw, 1.5rem); font-weight: 900; margin-bottom: 6px;">✨ 請選擇計算模式 ✨</h2>
+                <p style="color: #78909C; font-weight: bold; font-size: clamp(0.88rem, 3.2vw, 0.98rem); margin-bottom: 18px;">請跟從指示進行注射劑量評估</p>
+
+                <button class="btn-korean-3d btn-k-pink btn-home-align" onclick="switchTab('meal')">
+                    <span class="btn-icon-box">🍱</span>
+                    <span>1. 需要吃餐</span>
+                </button>
+
+                <button class="btn-korean-3d btn-k-mint btn-home-align" onclick="switchTab('correction')">
+                    <span class="btn-icon-box">💉</span>
+                    <span>2. 不吃餐 (追加速效)</span>
+                </button>
+
+                <button class="btn-korean-3d btn-k-purple btn-home-align" onclick="switchTab('bedtime')">
+                    <span class="btn-icon-box">🌙</span>
+                    <span>3. 晚上睡覺前 (長效)</span>
+                </button>
+
+                <button class="btn-korean-3d btn-k-yellow btn-home-align" onclick="openPasswordModal()">
+                    <span class="btn-icon-box">🔒</span>
+                    <span>4. 修改資料</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== MODE 1: 需要吃餐 ==================== -->
+        <div id="tab-meal" class="tab-content">
+            <div class="card card-bg-input">
+                <div class="card-title">🩸 1. 現時血糖值</div>
+                <label for="bgInputMeal" style="color: #B71C1C;">請輸入血糖度數 (mmol/L)：</label>
+                <div class="bg-input-group">
+                    <input type="number" id="bgInputMeal" step="0.1" min="0" placeholder="輸入數字" style="text-align: center; border-color: #FF8A80;" oninput="limitOneDecimal(this); checkBGAlert('Meal');" onkeydown="preventInvalidKeys(event)">
+                    <button type="button" id="noBgBtnMeal" class="btn-no-bg" onclick="toggleNoBG('Meal')">沒有數值</button>
+                    <button type="button" class="btn-no-bg" style="background: #ECEFF1; color:#37474F; border-color:#B0BEC5; box-shadow:0 4px 0 #78909C;" onclick="resetBGInput('Meal')">重置</button>
+                </div>
+
+                <div id="lowBGAlertMeal" class="alert-box alert-low-bg">
+                    <div class="alert-low-header">🚨 低血糖急救警告 (≤ 4.5)！</div>
+                    <div class="alert-low-body">
+                        <div style="font-size: 1.02rem; font-weight: 900; color: #C62828; margin-bottom: 8px;">請觀察症狀並立即採取以下處理步驟：</div>
+                        <ul class="alert-step-list">
+                            <li data-step="1">
+                                <strong>即時補充快速作用糖份：</strong><br>
+                                • 一包<span style="color:#E53935; font-weight:900;">有糖</span>檸檬茶 或<br>
+                                • 一罐<span style="color:#E53935; font-weight:900;">有糖</span>可口可樂 或<br>
+                                • 一包砂糖 (大家樂/大快活可取)
+                            </li>
+                            <li data-step="2">
+                                <strong>暫停注射胰島素：</strong><br>
+                                吃飯前如有低糖情況，<strong>切勿注射胰島素</strong>。請先進食，等待 30 分鐘後重新測量血糖。
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="highBGAlertMeal" class="alert-box alert-high-bg">
+                    <div class="alert-high-header">⚠️ 高血糖警告 (15.0 - 25.0)</div>
+                    <div class="alert-high-body">
+                        <ul class="alert-step-list">
+                            <li data-step="1">如血糖持續偏高，請依指示追加胰島素</li>
+                            <li data-step="2">多補充<span style="color:#000000; font-weight:900;">無糖</span>飲品或清水，幫助排糖</li>
+                            <li data-step="3">密切檢測血酮或尿酮指數</li>
+                            <li data-step="4"><strong style="color: #D84315;">如有嘔吐、頭暈，即打 999 報警叫救護車送院求醫！</strong></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="emergencyBGAlertMeal" class="alert-box alert-emergency-bg">
+                    <div class="alert-emergency-header">🚨 緊急提示 🚨</div>
+                    <div class="alert-emergency-body">
+                        <div class="alert-emergency-title">血糖極高警告 ( ≥ 26.0 )！</div>
+                        <div class="alert-emergency-subtitle">有糖尿病酮酸中毒的危險！</div>
+                        <ul class="alert-step-list">
+                            <li data-step="1">要即時打胰島素</li>
+                            <li data-step="2">補充<span style="color:#000000; font-weight:900;">無糖</span>飲品 或 清水</li>
+                            <li data-step="3">請檢測血酮或尿酮</li>
+                            <li data-step="4">有嘔吐、頭暈 即打 999 報警叫救護車去急症室求醫！</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-food-select">
+                <div class="card-title">🍔 2. 選擇餐飲（可不選）</div>
+                <label for="restaurantSelect">按下選擇食物：</label>
+                <div class="select-custom-wrapper">
+                    <select id="restaurantSelect" onchange="renderRestaurantFoodList()">
+                    </select>
+                </div>
+                
+                <div id="restaurantFoodContainer" style="margin-top: 14px; display: none;">
+                    <div class="scroll-hint">📜 列表可上下滾動選擇更多食物</div>
+                    <div id="restaurantFoodList" style="max-height: 260px; overflow-y: auto; padding: 10px; border: 2px solid #80CBC4; border-radius: 16px; background: #FFF; -webkit-overflow-scrolling: touch;"></div>
+                </div>
+            </div>
+
+            <div class="card card-cart-summary">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                        <div class="card-title" style="margin-bottom: 0;">🛒 已點選食物</div>
+                        <div style="font-size: 0.92rem; font-weight: 800; color: #555555; padding-left: 2px;">（共 <span id="cartItemCount" style="color: #D81B60; font-size: 1.05rem; font-weight: 900;">0</span> 件）</div>
+                    </div>
+                    <button class="btn-small-danger" style="margin-top: 4px;" onclick="clearCart()">🗑 清空餐單</button>
+                </div>
+                <div id="cartScrollHint" class="scroll-hint" style="margin-top: 8px; display: none;">📜 上下滾動可查看完整餐單項目</div>
+                <div id="cartList" class="cart-list">
+                    <p style="color: rgba(160, 160, 160, 0.65); font-size: 1rem; font-weight: bold; text-align: center; padding: 10px;">(沒有餐單)</p>
+                </div>
+                <div style="text-align: right; margin-top: 10px; font-weight: 900; color: #E65100; font-size: 1.1rem; background: rgba(255, 255, 255, 0.85); padding: 8px 12px; border-radius: 12px; border: 1.5px dashed #FFB74D; word-break: break-word;">
+                    碳水化合物 總和 = <span id="totalCarbs" style="font-size: 1.35rem; color: #D84315;">0</span> 克(g) 糖
+                </div>
+            </div>
+
+            <button class="btn-korean-3d btn-k-pink" onclick="calculateInsulinMeal()">
+                <span>▶ 計算胰島素注射劑量 ◀</span>
+            </button>
+            <button class="btn-korean-3d btn-k-grey" onclick="goHome()">
+                <span>🏠 返回首頁</span>
+            </button>
+        </div>
+
+        <!-- ==================== MODE 2: 不吃餐 (追加速效) ==================== -->
+        <div id="tab-correction" class="tab-content">
+            <div class="card card-bg-input">
+                <div class="card-title">💉 不吃餐 (追加速效胰島素)</div>
+                <p style="font-size: 0.95rem; font-weight: bold; color: #555; margin-bottom: 12px; line-height: 1.4;">適合不進食食物，僅為校正高血糖時使用。</p>
+                
+                <label for="bgInputCorr" style="color: #B71C1C;">請輸入現時血糖值 (mmol/L)：</label>
+                <div class="bg-input-group">
+                    <input type="number" id="bgInputCorr" step="0.1" min="0" placeholder="輸入數字" style="text-align: center; border-color: #FF8A80;" oninput="limitOneDecimal(this); checkBGAlert('Corr');" onkeydown="preventInvalidKeys(event)">
+                    <button type="button" class="btn-no-bg" style="background: #ECEFF1; color:#37474F; border-color:#B0BEC5; box-shadow:0 4px 0 #78909C;" onclick="resetBGInput('Corr')">重置</button>
+                </div>
+
+                <div id="lowBGAlertCorr" class="alert-box alert-low-bg">
+                    <div class="alert-low-header">🚨 低血糖急救警告 (≤ 4.5)！</div>
+                    <div class="alert-low-body">
+                        <div style="font-size: 1.02rem; font-weight: 900; color: #C62828; margin-bottom: 8px;">請立即採取以下處理步驟：</div>
+                        <ul class="alert-step-list">
+                            <li data-step="1">
+                                <strong>即時補充快速作用糖份：</strong><br>
+                                • 一包<span style="color:#E53935; font-weight:900;">有糖</span>檸檬茶 或<br>
+                                • 一罐<span style="color:#E53935; font-weight:900;">有糖</span>可口可樂 或<br>
+                                • 一包砂糖 (大家樂/大快活可取)
+                            </li>
+                            <li data-step="2">
+                                <strong>暫停追加胰島素：</strong><br>
+                                暫時不要注射胰島素，先補充食物/糖份，等待 30 分鐘後重新測量血糖。
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="highBGAlertCorr" class="alert-box alert-high-bg">
+                    <div class="alert-high-header">⚠️ 高血糖警告 (15.0 - 25.0)</div>
+                    <div class="alert-high-body">
+                        <ul class="alert-step-list">
+                            <li data-step="1">如血糖持續偏高，請依指示追加胰島素</li>
+                            <li data-step="2">多補充<span style="color:#000000; font-weight:900;">無糖</span>飲品或清水，幫助排糖</li>
+                            <li data-step="3">密切檢測血酮或尿酮指數</li>
+                            <li data-step="4"><strong style="color: #D84315;">如有嘔吐、頭暈，即打 999 報警叫救護車送院求醫！</strong></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div id="emergencyBGAlertCorr" class="alert-box alert-emergency-bg">
+                    <div class="alert-emergency-header">🚨 緊急提示 🚨</div>
+                    <div class="alert-emergency-body">
+                        <div class="alert-emergency-title">血糖極高警告 ( ≥ 26.0 )！</div>
+                        <div class="alert-emergency-subtitle">有糖尿病酮酸中毒的危險！</div>
+                        <ul class="alert-step-list">
+                            <li data-step="1">要即時打胰島素</li>
+                            <li data-step="2">補充<span style="color:#000000; font-weight:900;">無糖</span>飲品 或 清水</li>
+                            <li data-step="3">請檢測血酮或尿酮</li>
+                            <li data-step="4">有嘔吐、頭暈 即打 999 報警叫救護車去急症室求醫！</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-korean-3d btn-k-mint" onclick="calculateCorrectionOnly()">
+                <span>🧮 計算追加速效劑量</span>
+            </button>
+            <button class="btn-korean-3d btn-k-grey" onclick="goHome()">
+                <span>🏠 返回首頁</span>
+            </button>
+        </div>
+
+        <!-- ==================== TAB 2.5: 獨立不吃餐 (追加速效) 計算結果頁面 ==================== -->
+        <div id="tab-corr-result" class="tab-content">
+            <div class="card" style="background: #E0F2F1; border: 3.5px solid #4DB6AC;">
+                <h3 id="corrDoseHeader" style="color: #004D40; font-size: clamp(1.4rem, 5vw, 1.8rem); font-weight: 900; text-align: center; margin-bottom: 12px; line-height: 1.35; word-break: break-word; overflow-wrap: anywhere;">建議追加速效劑量</h3>
+
+                <div style="background: linear-gradient(135deg, #00796B, #004D40); color: white; padding: 18px 12px; border-radius: 20px; text-align: center; margin-bottom: 16px;">
+                    <div style="font-size: clamp(3.8rem, 15vw, 4.8rem); font-weight: 900; color: #FFFF00; line-height: 1;">
+                        <span id="corrResDoseVal">0</span> <span style="font-size: 1.6rem; color: #FFF;">度(u)</span>
+                    </div>
+                    <div id="corrDoseSubNote" style="font-size: 0.9rem; font-weight: bold; background: rgba(0,0,0,0.2); padding: 8px 10px; border-radius: 12px; margin-top: 10px; line-height: 1.4; word-break: break-word;">
+                        ( 僅供不進食情況下追加校正血糖使用 )
+                    </div>
+                </div>
+
+                <div id="corrResultLowBGAlert" class="alert-box alert-low-bg" style="display: none; margin-bottom: 16px;">
+                    <div class="alert-low-header">🚨 低血糖急救警告 (≤ 4.5)！</div>
+                    <div class="alert-low-body">
+                        <div style="font-size: 1.02rem; font-weight: 900; color: #C62828; margin-bottom: 8px;">請觀察症狀並立即採取以下處理步驟：</div>
+                        <ul class="alert-step-list">
+                            <li data-step="1">
+                                <strong>即時補充快速作用糖份：</strong><br>
+                                • 一包<span style="color:#E53935; font-weight:900;">有糖</span>檸檬茶 或<br>
+                                • 一罐<span style="color:#E53935; font-weight:900;">有糖</span>可口可樂 或<br>
+                                • 一包砂糖 (大家樂/大快活可取)
+                            </li>
+                            <li data-step="2">
+                                <strong>暫停追加胰島素：</strong><br>
+                                血糖過低，<strong>追加劑量為 0 度(u)</strong>。請先補充糖份，等待 30 分鐘後重新測量血糖。
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div style="background: white; padding: 14px; border-radius: 16px; border: 1.5px solid #80CBC4; margin-bottom: 16px; font-weight: 800; color: #37474F; line-height: 1.8; font-size: 0.98rem;">
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #B2DFDB; padding-bottom: 4px;">
+                        <span>📅 日期：</span>
+                        <span id="corrResDate" style="color: #00796B; font-weight: 900;">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #B2DFDB; padding-top: 4px; padding-bottom: 4px;">
+                        <span>⏰ 時間：</span>
+                        <span id="corrResTime" style="color: #00796B; font-weight: 900;">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #B2DFDB; padding-top: 4px; padding-bottom: 4px;">
+                        <span>🩸 現時血糖：</span>
+                        <span style="color: #D32F2F; font-weight: 900;"><span id="corrResBGVal">-</span> mmol/L</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #B2DFDB; padding-top: 4px; padding-bottom: 4px;">
+                        <span>🎯 目標血糖：</span>
+                        <span style="color: #00796B; font-weight: 900;"><span id="corrResTargetVal">-</span> mmol/L</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding-top: 4px;">
+                        <span>⚡ 敏感係數 (ISF)：</span>
+                        <span style="color: #00796B; font-weight: 900;">1 度 : <span id="corrResISFVal">-</span> mmol/L</span>
+                    </div>
+                </div>
+
+                <div class="equal-share-group">
+                    <button class="btn-korean-3d btn-wa" onclick="shareCorrResult('wa')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M12.031 2c-5.517 0-9.993 4.476-9.993 9.993 0 1.763.459 3.484 1.332 5.003l-1.37 5.004 5.121-1.343c1.472.803 3.136 1.229 4.91 1.229 5.518 0 9.994-4.476 9.994-9.993 0-5.517-4.476-9.994-9.993zm5.836 14.161c-.246.692-1.242 1.282-1.724 1.338-.472.055-1.077.214-3.535-.805-2.956-1.224-4.857-4.227-5.006-4.425-.148-.198-1.205-1.602-1.205-3.056 0-1.454.764-2.169 1.036-2.464.272-.295.592-.369.789-.369.198 0 .395.002.567.01.183.008.431-.07.674.513.246.592.838 2.043.912 2.191.074.148.123.321.025.518-.099.198-.148.321-.296.494-.148.173-.311.387-.444.522-.148.148-.302.309-.13.605.172.296.766 1.266 1.643 2.048 1.127 1.004 2.077 1.316 2.373 1.464.296.148.469.123.642-.074.173-.198.741-.863.938-1.16.198-.296.395-.246.666-.148.272.099 1.728.815 2.024.963.296.148.494.222.567.346.074.123.074.715-.172 1.407z"/></svg>
+                        <span>WhatsApp</span>
+                    </button>
+                    <button class="btn-korean-3d btn-email" onclick="shareCorrResult('email')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                        <span>電郵</span>
+                    </button>
+                </div>
+
+                <div class="equal-btn-group">
+                    <button class="btn-korean-3d btn-k-yellow" onclick="switchTab('correction')">
+                        <span>⬅️ 上一頁</span>
+                    </button>
+                    <button class="btn-korean-3d btn-k-grey" onclick="goHome()">
+                        <span>🏠 返回首頁</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== MODE 3: 晚上睡覺前 (長效) ==================== -->
+        <div id="tab-bedtime" class="tab-content">
+            <div class="card" style="background: linear-gradient(135deg, #F3E5F5 0%, #E1BEE7 100%); border-color: #CE93D8;">
+                <div class="card-title" style="color: #4A148C; display: block; font-size: 1.25rem;">🌙 晚上睡覺前 <span style="font-size: 0.82em; font-weight: 800; opacity: 0.9;">(24小時長效胰島素)</span></div>
+                <label for="bgInputBedtime" style="color: #4A148C;">請輸入現時睡前血糖 (mmol/L)：</label>
+                <input type="number" id="bgInputBedtime" step="0.1" min="0" placeholder="輸入數字" style="text-align: center; border-color: #BA68C8;" oninput="limitOneDecimal(this);" onkeydown="preventInvalidKeys(event)">
+            </div>
+
+            <button class="btn-korean-3d btn-k-purple" onclick="calculateBedtimeDose(true)">
+                <span>🔍 評估睡前長效劑量與小食</span>
+            </button>
+            <button class="btn-korean-3d btn-k-grey" onclick="goHome()">
+                <span>🏠 返回首頁</span>
+            </button>
+        </div>
+
+        <!-- ==================== TAB 3.5: 獨立睡前 (長效與小食) 計算結果頁面 ==================== -->
+        <div id="tab-bedtime-result" class="tab-content">
+            <div class="card" style="background: #F3E5F5; border: 3.5px solid #BA68C8;">
+                <h3 id="bedtimeDoseHeader" style="color: #4A148C; font-size: clamp(1.35rem, 4.8vw, 1.7rem); font-weight: 900; text-align: center; margin-bottom: 14px; line-height: 1.4; word-break: break-word; overflow-wrap: anywhere;">
+                    建議睡前長效劑量<br>與小食
+                </h3>
+
+                <div style="background: linear-gradient(135deg, #7B1FA2, #4A148C); color: white; padding: 18px 12px; border-radius: 20px; text-align: center; margin-bottom: 16px;">
+                    <div style="font-size: 1.1rem; font-weight: 900; color: #E1BEE7; margin-bottom: 6px;">建議 24 小時長效胰島素劑量</div>
+                    <div style="font-size: clamp(3.8rem, 15vw, 4.8rem); font-weight: 900; color: #FFFF00; line-height: 1;">
+                        <span id="bedtimeResLongDoseVal">0</span> <span style="font-size: 1.6rem; color: #FFF;">度(u)</span>
+                    </div>
+                </div>
+
+                <div id="bedtimeResRapidNote" style="display:none; background: #FFF0F2; border: 3.5px solid #D32F2F; border-radius: 20px; overflow: hidden; margin-bottom: 16px; box-shadow: 0 8px 20px rgba(211, 47, 47, 0.25); animation: pulse 1.5s infinite;">
+                    <div style="background: linear-gradient(135deg, #D32F2F, #C62828); color: #FFFFFF; padding: 10px 12px; font-size: 1.05rem; font-weight: 900; text-align: center; letter-spacing: 0.5px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        <span>🚨 ⚠️ 特別重要提示 ⚠️ 🚨</span>
+                    </div>
+                    <div style="padding: 14px 12px; text-align: center;">
+                        <div style="font-size: 1.02rem; font-weight: 900; color: #B71C1C; margin-bottom: 8px; line-height: 1.4; word-break: keep-all;">
+                            需要額外加入注射 <span style="font-size: 1.15rem; color: #D32F2F; text-decoration: underline; font-weight: 900;">「速效胰島素」</span> 劑量：
+                        </div>
+                        <div style="background: #FFEBEE; border: 2.5px dashed #FF5252; border-radius: 16px; padding: 8px 16px; display: inline-flex; align-items: baseline; justify-content: center; gap: 6px; margin: 4px 0; min-width: 160px;">
+                            <span style="font-size: 2.3rem; font-weight: 900; color: #D32F2F; line-height: 1;">+ <span id="bedtimeResRapidDoseVal">0</span></span>
+                            <span style="font-size: 1.2rem; font-weight: 900; color: #C62828;">度(u)</span>
+                        </div>
+                        <div style="font-size: 0.88rem; font-weight: 800; color: #8C1D1D; margin-top: 6px; word-break: keep-all;">
+                            ( 請與長效胰島素分開注射，切勿遺漏 )
+                        </div>
+                    </div>
+                </div>
+
+                <div id="bedtimeResultLowBGAlert" class="alert-box alert-low-bg" style="display: none; margin-bottom: 16px;">
+                    <div class="alert-low-header">🚨 睡前低血糖警告 (≤ 4.5)！</div>
+                    <div class="alert-low-body">
+                        <div style="font-size: 1.02rem; font-weight: 900; color: #C62828; margin-bottom: 8px;">請觀察症狀並立即採取以下處理步驟：</div>
+                        <ul class="alert-step-list">
+                            <li data-step="1">
+                                <strong>長效劑量調整：</strong><br>
+                                睡前血糖偏低，長效胰島素建議注射 <strong>0 度(u)</strong>。
+                            </li>
+                            <li data-step="2">
+                                <strong>即時補充睡前小食：</strong><br>
+                                請即時進食建議之睡前小食，並密切觀察血糖狀態。
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="snack-box" style="margin-top: 0; margin-bottom: 16px;">
+                    <div class="snack-title">🍿 建議睡前小食：</div>
+                    <div class="snack-item">
+                        <span style="color: #5D4037; flex-shrink: 0;">🥤 飲品：</span>
+                        <span id="bedtimeResDrinkVal" style="color: #D84315; font-weight: 900; word-break: break-word;">-</span>
+                    </div>
+                    <div class="snack-item">
+                        <span style="color: #5D4037; flex-shrink: 0;">🍪 食品：</span>
+                        <span id="bedtimeResFoodVal" style="color: #D84315; font-weight: 900; word-break: break-word;">-</span>
+                    </div>
+                </div>
+
+                <div style="background: white; padding: 14px; border-radius: 16px; border: 1.5px solid #CE93D8; margin-bottom: 16px; font-weight: 800; color: #37474F; line-height: 1.8; font-size: 0.98rem;">
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #E1BEE7; padding-bottom: 4px;">
+                        <span>📅 日期：</span>
+                        <span id="bedtimeResDate" style="color: #6A1B9A; font-weight: 900;">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #E1BEE7; padding-top: 4px; padding-bottom: 4px;">
+                        <span>⏰ 時間：</span>
+                        <span id="bedtimeResTime" style="color: #6A1B9A; font-weight: 900;">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding-top: 4px;">
+                        <span>🩸 睡前血糖：</span>
+                        <span style="color: #D32F2F; font-weight: 900;"><span id="bedtimeResBGVal">-</span> mmol/L</span>
+                    </div>
+                </div>
+
+                <div class="equal-share-group">
+                    <button class="btn-korean-3d btn-wa" onclick="shareBedtimeResult('wa')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M12.031 2c-5.517 0-9.993 4.476-9.993 9.993 0 1.763.459 3.484 1.332 5.003l-1.37 5.004 5.121-1.343c1.472.803 3.136 1.229 4.91 1.229 5.518 0 9.994-4.476 9.994-9.993 0-5.517-4.476-9.994-9.993zm5.836 14.161c-.246.692-1.242 1.282-1.724 1.338-.472.055-1.077.214-3.535-.805-2.956-1.224-4.857-4.227-5.006-4.425-.148-.198-1.205-1.602-1.205-3.056 0-1.454.764-2.169 1.036-2.464.272-.295.592-.369.789-.369.198 0 .395.002.567.01.183.008.431-.07.674.513.246.592.838 2.043.912 2.191.074.148.123.321.025.518-.099.198-.148.321-.296.494-.148.173-.311.387-.444.522-.148.148-.302.309-.13.605.172.296.766 1.266 1.643 2.048 1.127 1.004 2.077 1.316 2.373 1.464.296.148.469.123.642-.074.173-.198.741-.863.938-1.16.198-.296.395-.246.666-.148.272.099 1.728.815 2.024.963.296.148.494.222.567.346.074.123.074.715-.172 1.407z"/></svg>
+                        <span>WhatsApp</span>
+                    </button>
+                    <button class="btn-korean-3d btn-email" onclick="shareBedtimeResult('email')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                        <span>電郵</span>
+                    </button>
+                </div>
+
+                <div class="equal-btn-group">
+                    <button class="btn-korean-3d btn-k-yellow" onclick="switchTab('bedtime')">
+                        <span>⬅️ 上一頁</span>
+                    </button>
+                    <button class="btn-korean-3d btn-k-grey" onclick="goHome()">
+                        <span>🏠 返回首頁</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== MODE 4: ADMIN 管理選單 ==================== -->
+        <div id="tab-admin-menu" class="tab-content">
+            <div class="card" style="text-align: center; background: #FFF8E1; border-color: #FFE082;">
+                <div class="card-title" style="color: #E65100; justify-content: center;">⚙ 資料修改與參數管理</div>
+                <p style="color: #666; font-size: 0.95rem; font-weight: bold; margin-bottom: 18px;">已解鎖管理員權限，請選擇要修改的項目：</p>
+
+                <button class="btn-korean-3d btn-k-mint btn-home-align" onclick="switchTab('menu')">
+                    <span class="btn-icon-box">🍱</span>
+                    <span>1. 食物清單 (餐廳庫)</span>
+                </button>
+
+                <button class="btn-korean-3d btn-k-pink btn-home-align" onclick="switchTab('settings')">
+                    <span class="btn-icon-box">⚙</span>
+                    <span>2. 個人參數 (ICR / ISF)</span>
+                </button>
+
+                <button class="btn-korean-3d btn-k-purple btn-home-align" onclick="openBedtimeSettings()">
+                    <span class="btn-icon-box">🌙</span>
+                    <span>3. 24小時長效參數</span>
+                </button>
+
+                <button class="btn-korean-3d btn-k-grey" onclick="goHome()">
+                    <span>🏠 返回首頁</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== TAB 1.5: 獨立餐飲計算結果頁面 ==================== -->
+        <div id="tab-result" class="tab-content">
+            <div class="card" style="background: #F1F8E9; border: 3.5px solid #81C784;">
+                <h3 style="color: #1B5E20; font-size: clamp(1.4rem, 5vw, 1.8rem); font-weight: 900; text-align: center; margin-bottom: 12px;">建議注射總劑量</h3>
+
+                <div style="background: linear-gradient(135deg, #2E7D32, #1B5E20); color: white; padding: 18px 12px; border-radius: 20px; text-align: center; margin-bottom: 16px;">
+                    <div style="font-size: clamp(3.8rem, 15vw, 4.8rem); font-weight: 900; color: #FFFF00; line-height: 1;">
+                        <span id="resTotalDose">0</span> <span style="font-size: 1.6rem; color: #FFF;">度(u)</span>
+                    </div>
+                    <div id="doseNote" style="font-size: 0.92rem; font-weight: bold; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 12px; margin-top: 10px; line-height: 1.45; word-break: break-word; overflow-wrap: anywhere;">
+                        ( 如進行較長時間體能/劇烈運動後，建議將胰島素注射總劑量減 -2 度(u)，為了避免延遲性低血糖現象發生 )
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px;">
+                    <div style="background: white; padding: 10px 6px; border-radius: 16px; border: 1.5px solid #A5D6A7; text-align: center; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="font-size: 0.85rem; font-weight: bold; color: #37474F;">🩸 現時血糖</div>
+                            <div style="font-size: 1.25rem; font-weight: 900; color: #1B5E20; margin: 4px 0;"><span id="resBG">-</span> <small style="font-size: 0.75rem;">mmol/L</small></div>
+                        </div>
+                        <div style="background: #E0F2F1; padding: 6px 4px; border-radius: 10px; margin-top: 4px;">
+                            <div style="font-size: 0.78rem; font-weight: 800; color: #00796B;">血糖校正劑量</div>
+                            <div style="font-size: 1rem; font-weight: 900; color: #004D40; margin-top: 2px;"><span id="resCorrDose">0</span> 度(u)</div>
+                        </div>
+                    </div>
+                    <div style="background: white; padding: 10px 6px; border-radius: 16px; border: 1.5px solid #A5D6A7; text-align: center; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="font-size: 0.85rem; font-weight: bold; color: #37474F;">🍚 總碳水化合物</div>
+                            <div style="font-size: 1.25rem; font-weight: 900; color: #D84315; margin: 4px 0;"><span id="resCarbs">-</span> <small style="font-size: 0.75rem;">克(g)</small></div>
+                        </div>
+                        <div style="background: #FFF3E0; padding: 6px 4px; border-radius: 10px; margin-top: 4px;">
+                            <div style="font-size: 0.78rem; font-weight: 800; color: #E65100;">食物胰島素量</div>
+                            <div style="font-size: 1rem; font-weight: 900; color: #BF360C; margin-top: 2px;"><span id="resFoodDose">0</span> 度(u)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: white; padding: 14px; border-radius: 16px; border: 1.5px solid #A5D6A7; margin-bottom: 16px;">
+                    <div style="font-size: 1.1rem; font-weight: 900; color: #1B5E20; margin-bottom: 8px;">🍔 選購食物列表：</div>
+                    <div id="resFoodSummary">(沒有選擇食物)</div>
+                </div>
+
+                <button class="btn-korean-3d btn-k-blue" onclick="openReportPage()">
+                    <span>📲 分享詳細計算結果 ✨</span>
+                </button>
+                
+                <div class="equal-btn-group">
+                    <button class="btn-korean-3d btn-k-yellow" onclick="switchTab('meal')">
+                        <span>⬅️ 上一頁</span>
+                    </button>
+                    <button class="btn-korean-3d btn-k-grey" onclick="goHome()">
+                        <span>🏠 返回首頁</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== NEW PAGE: 獨立詳細計算結果報告頁面 ==================== -->
+        <div id="tab-report-detail" class="tab-content">
+            <div class="card" style="background: #FFFFFF; border: 3.5px solid #80CBC4;">
+                <div style="text-align: center; margin-bottom: 12px;">
+                    <div style="font-size: 2.5rem; line-height: 1;">📄</div>
+                    <h2 style="font-size: 1.35rem; font-weight: 900; color: #00796B; margin-top: 4px;">詳細計算結果報告</h2>
+                    <div style="font-size: 0.85rem; color: #555555; font-weight: 800; margin-top: 4px;">請選擇發送途徑分享以下完整數據紀錄：</div>
+                </div>
+
+                <div id="fullReportContentContainer" style="margin-bottom: 16px; word-break: break-word;">
+                </div>
+
+                <div class="equal-share-group">
+                    <button class="btn-korean-3d btn-wa" onclick="shareResult('wa')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M12.031 2c-5.517 0-9.993 4.476-9.993 9.993 0 1.763.459 3.484 1.332 5.003l-1.37 5.004 5.121-1.343c1.472.803 3.136 1.229 4.91 1.229 5.518 0 9.994-4.476 9.994-9.993 0-5.517-4.476-9.994-9.993zm5.836 14.161c-.246.692-1.242 1.282-1.724 1.338-.472.055-1.077.214-3.535-.805-2.956-1.224-4.857-4.227-5.006-4.425-.148-.198-1.205-1.602-1.205-3.056 0-1.454.764-2.169 1.036-2.464.272-.295.592-.369.789-.369.198 0 .395.002.567.01.183.008.431-.07.674.513.246.592.838 2.043.912 2.191.074.148.123.321.025.518-.099.198-.148.321-.296.494-.148.173-.311.387-.444.522-.148.148-.302.309-.13.605.172.296.766 1.266 1.643 2.048 1.127 1.004 2.077 1.316 2.373 1.464.296.148.469.123.642-.074.173-.198.741-.863.938-1.16.198-.296.395-.246.666-.148.272.099 1.728.815 2.024.963.296.148.494.222.567.346.074.123.074.715-.172 1.407z"/></svg>
+                        <span>WhatsApp</span>
+                    </button>
+                    <button class="btn-korean-3d btn-email" onclick="shareResult('email')">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="white" style="flex-shrink:0;"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                        <span>電郵</span>
+                    </button>
+                </div>
+
+                <div class="equal-btn-group">
+                    <button class="btn-korean-3d btn-k-yellow" onclick="switchTab('result')">
+                        <span>⬅ 上一頁</span>
+                    </button>
+                    <button class="btn-korean-3d btn-k-grey" onclick="goHome()">
+                        <span>🏠 返回首頁</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== SUB-PAGE: 個人參數 ==================== -->
+        <div id="tab-settings" class="tab-content">
+            <div class="card" style="background: #FFFFFF; border: 3.5px solid #FFB3C1;">
+                <div class="card-title" style="font-size: 1.35rem; color: #D81B60; margin-bottom: 16px;">⚙ 個人胰島素反應參數</div>
+                
+                <div style="margin-bottom: 18px;">
+                    <label for="targetBG" style="font-size: 1.05rem; font-weight: 900; color: #263238; margin-bottom: 4px;">🎯 目標血糖值 (mmol/L)：</label>
+                    <div style="font-size: 0.9rem; font-weight: 800; color: #D81B60; background: #FFF0F3; padding: 8px 12px; border-radius: 12px; border: 1.5px solid #FFB3C1; margin-bottom: 8px; line-height: 1.45; word-break: break-word; overflow-wrap: anywhere;">
+                        💡 ( 理想範圍 5.0 – 7.0 )
+                    </div>
+                    <input type="number" id="targetBG" step="0.1" min="0.1" placeholder="請輸入目標血糖 (如 6)" oninput="limitOneDecimal(this)" onkeydown="preventInvalidKeys(event)" style="font-size: 16px; padding: 12px 14px;">
+                </div>
+
+                <div style="margin-bottom: 18px;">
+                    <label for="isfInput" style="font-size: 1.05rem; font-weight: 900; color: #263238; margin-bottom: 4px;">⚡ 胰島素敏感係數 (ISF)：mmol/L / u</label>
+                    <div style="font-size: 0.9rem; font-weight: 800; color: #00695C; background: #E0F2F1; padding: 8px 12px; border-radius: 12px; border: 1.5px solid #B2DFDB; margin-bottom: 8px; line-height: 1.5; word-break: break-word; overflow-wrap: anywhere; display: flex; align-items: flex-start; gap: 6px;">
+                        <span>💡</span>
+                        <div>
+                            <div>( 代表注射 1 度(u) 速效胰島素</div>
+                            <div>能降低多少 mmol/L 的血糖 )</div>
+                        </div>
+                    </div>
+                    <input type="number" id="isfInput" step="0.1" min="0.1" placeholder="請輸入敏感係數 (如 3)" oninput="limitOneDecimal(this)" onkeydown="preventInvalidKeys(event)" style="font-size: 16px; padding: 12px 14px;">
+                </div>
+
+                <div style="margin-bottom: 22px;">
+                    <label for="cirInput" style="font-size: 1.05rem; font-weight: 900; color: #263238; margin-bottom: 4px;">🍚 碳胰比 (ICR)：g / u</label>
+                    <div style="font-size: 0.9rem; font-weight: 800; color: #E65100; background: #FFF3E0; padding: 8px 12px; border-radius: 12px; border: 1.5px solid #FFE0B2; margin-bottom: 8px; line-height: 1.5; word-break: break-word; overflow-wrap: anywhere; display: flex; align-items: flex-start; gap: 6px;">
+                        <span>💡</span>
+                        <div>
+                            <div>( 代表注射 1 度(u) 速效胰島素</div>
+                            <div>可處理多少 克(g) 的碳水化合物 )</div>
+                        </div>
+                    </div>
+                    <input type="number" id="cirInput" step="0.1" min="0.1" placeholder="請輸入碳胰比 (如 5)" oninput="limitOneDecimal(this)" onkeydown="preventInvalidKeys(event)" style="font-size: 16px; padding: 12px 14px;">
+                </div>
+
+                <button class="btn-korean-3d btn-k-mint" style="margin-top: 5px;" onclick="saveSettings()">💾 儲存個人設定</button>
+                <button class="btn-korean-3d btn-k-pink" onclick="resetSettings()">🔄 還原預設個人參數</button>
+                <button class="btn-korean-3d btn-k-grey" onclick="switchTab('admin-menu')">⬅ 返回管理選單</button>
+            </div>
+        </div>
+
+        <!-- ==================== SUB-PAGE: 餐廳食品庫管理 ==================== -->
+        <div id="tab-menu" class="tab-content">
+            <div class="card">
+                <div class="card-title">🍱 餐廳及食品資料庫管理</div>
+                <input type="text" id="manageRestName" placeholder="餐廳名稱 (如：麥當勞)">
+                <input type="text" id="manageFoodName" placeholder="食品名稱 (如：朱古力雪糕)" style="margin-top: 8px;">
+                <input type="number" id="manageFoodCarbs" step="0.1" min="0" placeholder=" 碳水化合物 ( 克(g) ) " style="margin-top: 8px;" oninput="limitOneDecimal(this)" onkeydown="preventInvalidKeys(event)">
+                
+                <button class="btn-korean-3d btn-k-mint" style="margin-top: 12px;" onclick="addCustomFoodPrompt()">🪄 新增 / 修改單項食品</button>
+            </div>
+
+            <div class="card">
+                <div class="card-title">📖 現有食品列表</div>
+                
+                <div class="scroll-hint">📜 列表可上下滾動瀏覽資料庫項目</div>
+                <div id="menuManageList" style="max-height: 280px; overflow-y: auto; border: 2px solid #FFE0E0; border-radius: 14px; padding: 10px; background: #FFF; -webkit-overflow-scrolling: touch;"></div>
+
+                <div class="equal-btn-group" style="margin-top: 14px; margin-bottom: 12px;">
+                    <button class="btn-korean-3d btn-k-blue" onclick="exportMenuData()">📤 匯出資料</button>
+                    <button class="btn-korean-3d btn-k-purple" onclick="document.getElementById('importFileInput').click()">📥 匯入資料</button>
+                </div>
+                <input type="file" id="importFileInput" accept=".json,application/json,text/plain,text/json" style="display: none;" onchange="importMenuData(event)">
+
+                <button class="btn-korean-3d btn-k-pink" style="margin-bottom: 12px;" onclick="resetDefaultMenu()">🔄 還原預設食品資料庫</button>
+
+                <button class="btn-korean-3d btn-k-grey" onclick="switchTab('admin-menu')">⬅ 返回管理選單</button>
+            </div>
+        </div>
+
+        <!-- ==================== SUB-PAGE: 24小時長效參數編輯頁面 ==================== -->
+        <div id="tab-bedtime-settings" class="tab-content">
+            <div class="card">
+                <div class="card-title" style="color: #6A1B9A;">🌙 24小時長效對應規則設定</div>
+                <div style="font-size: 0.95rem; font-weight: bold; color: #555; margin-bottom: 14px; line-height: 1.5;">
+                    <div>此處可修改不同血糖範圍對應的長效劑量</div>
+                    <div>與睡前小食：</div>
+                </div>
+
+                <div class="scroll-hint">📜 上下滾動以修改更多血糖區間</div>
+                <div id="bedtimeRulesAdminList" style="max-height: 380px; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-right: 4px;"></div>
+
+                <button class="btn-korean-3d btn-k-purple" style="margin-top: 12px;" onclick="saveBedtimeRulesAdmin()">💾 儲存長效參數設定</button>
+                <button class="btn-korean-3d btn-k-pink" onclick="resetBedtimeRulesAdmin()">🔄 還原預設長效規則</button>
+                <button class="btn-korean-3d btn-k-grey" onclick="switchTab('admin-menu')">⬅️ 返回管理選單</button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 密碼輸入彈窗 -->
+    <div id="passwordModal" class="modal-overlay">
+        <div class="modal-card">
+            <div style="font-size: 2.8rem;">🔒</div>
+            <div style="font-size: 1.25rem; font-weight: 900; color: #D81B60; margin-bottom: 6px;">需要管理員解鎖</div>
+            <div style="font-size: 0.92rem; color: #555; font-weight: bold; margin-bottom: 15px;">💡 請輸入詩晴生日 6 位數字 (月、日、年)</div>
+            <input type="password" id="adminPasswordInput" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="輸入6位數字密碼" style="text-align: center; font-size: 16px; padding: 12px 8px;" oninput="this.value=this.value.replace(/[^0-9]/g,'')" onkeydown="if(event.key==='Enter') verifyPassword()">
+            <div class="equal-btn-group" style="margin-top: 18px;">
+                <button class="btn-korean-3d btn-k-pink" onclick="verifyPassword()">確認解鎖</button>
+                <button class="btn-korean-3d btn-k-grey" onclick="closePasswordModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示彈窗 Modal -->
+    <div id="customAlertModal" class="modal-overlay">
+        <div class="modal-card">
+            <div style="font-size: 2.8rem;">⚠️</div>
+            <div id="modalAlertMsg" style="font-size: 1.15rem; font-weight: bold; color: #D84315; margin: 15px 0;">提示文字</div>
+            <button class="btn-korean-3d btn-k-pink" style="margin: 0;" onclick="closeAlertModal()">知道了</button>
+        </div>
+    </div>
+
+    <!-- 雙按鈕確認彈窗 Modal -->
+    <div id="customConfirmModal" class="modal-overlay">
+        <div class="modal-card">
+            <div style="font-size: 2.8rem;">❓</div>
+            <div id="modalConfirmMsg" style="font-size: 1.15rem; font-weight: bold; color: #0D47A1; margin: 15px 0;">確認文字</div>
+            <div class="equal-btn-group" style="margin-top: 15px;">
+                <button id="modalConfirmBtn" class="btn-korean-3d btn-k-mint">確定</button>
+                <button class="btn-korean-3d btn-k-grey" onclick="closeConfirmModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isNoBGMode = false;
+        let confirmCallback = null;
+        let alertCallback = null;
+        let lastCalculationTimestamp = null;
+
+        const HARDCODED_BEDTIME_RULES = [
+            { min: 0, max: 4.5, label: "4.5 或以下", longDose: 0, rapidDose: 0, drink: "牛奶 (小包)", food: "紫菜", isLowAlert: true },
+            { min: 4.6, max: 7.9, label: "5 至 7", longDose: 8, rapidDose: 0, drink: "牛奶 或 低糖檸檬茶", food: "紫菜" },
+            { min: 8.0, max: 11.9, label: "8 至 11", longDose: 10, rapidDose: 0, drink: "無糖飲品", food: "紫菜" },
+            { min: 12.0, max: 16.9, label: "12 至 16", longDose: 12, rapidDose: 0, drink: "無糖飲品", food: "紫菜" },
+            { min: 17.0, max: 999, label: "17 或以上", longDose: 12, rapidDose: 2, drink: "無糖飲品", food: "紫菜", note: "需要特別註明需要加入注射「(速效)胰島素」劑量：2 度(u)" }
+        ];
+
+        const HARDCODED_DEFAULT_MENU = {
+            "在家吃飯": [
+                { name: "飯 (1碗)", carbs: 50 },
+                { name: "飯 (半碗)", carbs: 30 }
+            ],
+            "麥當勞": [
+                { name: "魚柳包 (有醬/走醬)", carbs: 15 },
+                { name: "通心粉 (半碗)", carbs: 15 },
+                { name: "麥樂雞", carbs: 0 },
+                { name: "脆香雞翼 (2只)", carbs: 5 },
+                { name: "脆香雞翼 (4只)", carbs: 10 },
+                { name: "薯餅", carbs: 10 },
+                { name: "細薯條", carbs: 15 },
+                { name: "中薯條", carbs: 25 },
+                { name: "大薯條", carbs: 25 }
+            ],
+            "KFC": [
+                { name: "白汁雞皇飯 (大/小)", carbs: 25 },
+                { name: "雞翼 (2只)", carbs: 5 },
+                { name: "雞翼 (4只)", carbs: 10 },
+                { name: "雞件 (1件)", carbs: 10 },
+                { name: "雞件 (2件)", carbs: 20 },
+                { name: "薯格", carbs: 20 }
+            ],
+            "大家樂 / 大快活 / 美心MX": [
+                { name: "切雞飯", carbs: 50 },
+                { name: "燒肉飯", carbs: 50 },
+                { name: "燒鴨飯", carbs: 50 },
+                { name: "雞排飯", carbs: 50 },
+                { name: "豬排飯", carbs: 50 },
+                { name: "焗豬扒飯", carbs: 50 },
+                { name: "干炒牛河", carbs: 50 }
+            ],
+            "吉野家": [
+                { name: "牛肉飯 (小)", carbs: 40 },
+                { name: "牛肉飯 (中)", carbs: 50 },
+                { name: "牛肉飯 (大)", carbs: 60 },
+                { name: "打邊爐 (烏冬 / 飯)", carbs: 40 }
+            ],
+            "八方雲集": [
+                { name: "水餃 (10隻)", carbs: 35 },
+                { name: "水餃麵", carbs: 50 }
+            ],
+            "唐記 / 包點 / 蒸飯": [
+                { name: "排骨飯", carbs: 45 },
+                { name: "滑雞飯", carbs: 45 },
+                { name: "小食拼盤 (腸粉/魚蛋)", carbs: 40 }
+            ],
+            "米線 / 湯麵": [
+                { name: "米線", carbs: 40 },
+                { name: "湯麵", carbs: 40 }
+            ],
+            "薩莉亞": [
+                { name: "Pizza (1件)", carbs: 10 },
+                { name: "意粉", carbs: 35 },
+                { name: "飯", carbs: 50 }
+            ],
+            "Pizza hut": [
+                { name: "Pizza (1件)", carbs: 15 },
+                { name: "飯", carbs: 50 },
+                { name: "意粉", carbs: 50 },
+                { name: "腸仔", carbs: 5 },
+                { name: "雞翼 (2只)", carbs: 5 },
+                { name: "薯條", carbs: 15 },
+                { name: "蛋糕 (1件)", carbs: 20 },
+                { name: "(無糖) 套餐一起食", carbs: 35 },
+                { name: "(有糖) 套餐一起食", carbs: 60 }
+            ],
+            "元氣 / 爭鮮壽司": [
+                { name: "任何壽司 (1件)", carbs: 5 },
+                { name: "三文魚小卷 (3件)", carbs: 10 },
+                { name: "烏冬", carbs: 25 },
+                { name: "手卷壽司", carbs: 30 },
+                { name: "中華沙律", carbs: 5 }
+            ],
+            "酒樓": [
+                { name: "蝦腸 (1條)", carbs: 10 },
+                { name: "牛肉燒賣 (3粒)", carbs: 10 },
+                { name: "切雞飯", carbs: 50 }
+            ],
+            "韓國食品": [
+                { name: "拌飯", carbs: 50 },
+                { name: "韓式炸雞 (3粒)", carbs: 10 }
+            ],
+            "小食": [
+                { name: "炸雞翼 (2只)", carbs: 5 },
+                { name: "燒賣 (3粒)", carbs: 10 },
+                { name: "腸粉 (1條)", carbs: 10 },
+                { name: "魚蛋 (4粒)", carbs: 10 },
+                { name: "炸雞粒", carbs: 20 },
+                { name: "雪糕", carbs: 20 }
+            ],
+            "其他餐廳": [
+                { name: "餃子 (3件)", carbs: 10 },
+                { name: "雲吞 (3粒)", carbs: 10 },
+                { name: "烏冬 (一碗)", carbs: 40 },
+                { name: "飯 (一碗/一碟)", carbs: 50 },
+                { name: "麵 (一碗/一碟)", carbs: 50 },
+                { name: "湯粉 (一碗/一碟)", carbs: 50 }
+            ],
+            "蜜雪冰城 / 霸王茶姬 / 喜茶": [
+                { name: "(無糖) 大紅袍茶", carbs: 0 },
+                { name: "(無糖) 蘋果茶", carbs: 0 },
+                { name: "(無糖) 烘焙烏龍茶", carbs: 0 },
+                { name: "雪王雪頂咖啡", carbs: 25 }
+            ],
+            "瑞幸 / Starbucks / 咖啡": [
+                { name: "(無糖) 美式咖啡", carbs: 0 },
+                { name: "(無糖) 拿鐵咖啡", carbs: 0 },
+                { name: "(無糖) 橙C美式咖啡", carbs: 10 },
+                { name: "(有糖) 任何咖啡", carbs: 25 }
+            ],
+            "飲品": [
+                { name: "(無糖) 檸檬茶", carbs: 0 },
+                { name: "(無糖) 可樂/雪碧", carbs: 0 },
+                { name: "(無糖) 其他飲品", carbs: 0 },
+                { name: "(低糖) 檸檬茶", carbs: 15 },
+                { name: "(少糖) 其他飲品", carbs: 10 },
+                { name: "(有糖) 檸檬茶", carbs: 25 },
+                { name: "(有糖) 可樂/雪碧", carbs: 25 },
+                { name: "(有糖) 其他飲品", carbs: 25 },
+                { name: "小盒牛奶", carbs: 5 },
+                { name: "牛奶", carbs: 15 },
+                { name: "冰紅茶 (大/小)", carbs: 25 },
+                { name: "阿華田 (熱/凍)", carbs: 25 },
+                { name: "朱古力 (熱/凍)", carbs: 25 },
+                { name: "7-UP / 忌廉", carbs: 25 },
+                { name: "豆漿 (熱/凍)", carbs: 25 },
+                { name: "西瓜汁", carbs: 20 },
+                { name: "鮮橙汁", carbs: 20 }
+            ]
+        };
+
+        const DEFAULT_SETTINGS = { targetBG: 6, cir: 5, isf: 3 };
+
+        let menuData, settings, bedtimeRules;
+
+        try {
+            menuData = JSON.parse(localStorage.getItem("sugar_menu_v6")) || JSON.parse(JSON.stringify(HARDCODED_DEFAULT_MENU));
+            settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(localStorage.getItem("sugar_settings")));
+            bedtimeRules = JSON.parse(localStorage.getItem("sugar_bedtime_rules")) || JSON.parse(JSON.stringify(HARDCODED_BEDTIME_RULES));
+        } catch(e) {
+            menuData = JSON.parse(JSON.stringify(HARDCODED_DEFAULT_MENU));
+            settings = { ...DEFAULT_SETTINGS };
+            bedtimeRules = JSON.parse(JSON.stringify(HARDCODED_BEDTIME_RULES));
+        }
+
+        let cart = [];
+
+        window.onload = function() {
+            initSettingsUI();
+            loadRestaurantOptions();
+            renderMenuManageList();
+            renderCart();
+            registerStandardServiceWorker();
+        };
+
+        /* 正確註冊獨立 sw.js 檔案 (相容 PWA 安裝標準) */
+        function registerStandardServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((reg) => console.log('PWA Service Worker 註冊成功！', reg))
+                    .catch((err) => console.log('Service Worker 註冊失敗（需透過 HTTPS 協議開啟）:', err));
+            }
+        }
+
+        function preventInvalidKeys(e) {
+            if (['e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
+        }
+
+        function limitOneDecimal(el) {
+            if (!el || !el.value) return;
+            let val = el.value;
+            if (val.includes('.')) {
+                const parts = val.split('.');
+                if (parts[1] && parts[1].length > 1) {
+                    el.value = parts[0] + '.' + parts[1].substring(0, 1);
+                }
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        function colorizeSugarText(str) {
+            if (!str) return '';
+            let escaped = escapeHtml(str);
+            let res = escaped.replace(/(\(|\（)(.*?)(\)|\）)/g, function(match, p1, p2, p3) {
+                return `<span style="color: #0D47A1; font-weight: 800;">${p1}${p2}${p3}</span>`;
+            });
+            return res
+                .replace(/無糖/g, '<span style="color: #000000; font-weight: 900;">無糖</span>')
+                .replace(/低糖/g, '<span style="color: #1976D2; font-weight: 900;">低糖</span>')
+                .replace(/少糖/g, '<span style="color: #1976D2; font-weight: 900;">少糖</span>')
+                .replace(/有糖/g, '<span style="color: #E53935; font-weight: 900;">有糖</span>');
+        }
+
+        function formatReportDateTime(d) {
+            const dt = d || lastCalculationTimestamp || new Date();
+            const year = dt.getFullYear();
+            const month = String(dt.getMonth() + 1).padStart(2, '0');
+            const day = String(dt.getDate()).padStart(2, '0');
+            const daysHK = ['日', '一', '二', '三', '四', '五', '六'];
+            const weekDay = daysHK[dt.getDay()];
+            
+            const hours = String(dt.getHours()).padStart(2, '0');
+            const minutes = String(dt.getMinutes()).padStart(2, '0');
+
+            return {
+                dateStr: `${year}/${month}/${day} (${weekDay})`,
+                timeStr: `${hours}:${minutes}`
+            };
+        }
+
+        function showAlert(msg, callback = null) {
+            document.getElementById('modalAlertMsg').innerText = msg;
+            document.getElementById('customAlertModal').style.display = 'flex';
+            alertCallback = callback;
+        }
+
+        function closeAlertModal() {
+            document.getElementById('customAlertModal').style.display = 'none';
+            if (alertCallback) {
+                const cb = alertCallback;
+                alertCallback = null;
+                cb();
+            }
+        }
+
+        function showConfirm(msg, onConfirm) {
+            document.getElementById('modalConfirmMsg').innerText = msg;
+            document.getElementById('customConfirmModal').style.display = 'flex';
+            confirmCallback = onConfirm;
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('customConfirmModal').style.display = 'none';
+            confirmCallback = null;
+        }
+
+        document.getElementById('modalConfirmBtn').addEventListener('click', function() {
+            if (confirmCallback) {
+                const action = confirmCallback;
+                confirmCallback = null;
+                closeConfirmModal();
+                action();
+            } else {
+                closeConfirmModal();
+            }
+        });
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            const target = document.getElementById('tab-' + tabId);
+            if (target) target.classList.add('active');
+
+            if (tabId === 'settings') {
+                initSettingsUI();
+            } else if (tabId === 'menu') {
+                const rName = document.getElementById('manageRestName');
+                const fName = document.getElementById('manageFoodName');
+                const fCarbs = document.getElementById('manageFoodCarbs');
+                if (rName) rName.value = '';
+                if (fName) fName.value = '';
+                if (fCarbs) fCarbs.value = '';
+            }
+
+            window.scrollTo(0, 0);
+        }
+
+        function goHome() {
+            resetBGInput('Meal');
+            resetBGInput('Corr');
+            document.getElementById('bgInputBedtime').value = '';
+            
+            const restSelect = document.getElementById('restaurantSelect');
+            if (restSelect) restSelect.selectedIndex = 0;
+            const container = document.getElementById('restaurantFoodContainer');
+            if (container) container.style.display = 'none';
+
+            cart = [];
+            renderCart();
+
+            switchTab('home');
+        }
+
+        function openPasswordModal() {
+            const pwdInput = document.getElementById('adminPasswordInput');
+            pwdInput.value = '';
+            document.getElementById('passwordModal').style.display = 'flex';
+            setTimeout(() => pwdInput.focus(), 100);
+        }
+
+        function closePasswordModal() {
+            document.getElementById('passwordModal').style.display = 'none';
+        }
+
+        function verifyPassword() {
+            const pwdInput = document.getElementById('adminPasswordInput');
+            const pwd = pwdInput.value.trim();
+            if (pwd === "011705") {
+                closePasswordModal();
+                switchTab('admin-menu');
+            } else {
+                showAlert("❌ 密碼不正確！請重新輸入。", function() {
+                    pwdInput.value = '';
+                    setTimeout(() => pwdInput.focus(), 100);
+                });
+            }
+        }
+
+        function toggleNoBG(type) {
+            const bgInput = document.getElementById('bgInput' + type);
+            const noBgBtn = document.getElementById('noBgBtn' + type);
+            isNoBGMode = !isNoBGMode;
+
+            if (isNoBGMode) {
+                bgInput.type = 'text';
+                bgInput.value = '沒有數值';
+                bgInput.disabled = true;
+                if (noBgBtn) noBgBtn.classList.add('active');
+                hideAllBGAlerts(type);
+            } else {
+                bgInput.type = 'number';
+                bgInput.value = '';
+                bgInput.disabled = false;
+                if (noBgBtn) noBgBtn.classList.remove('active');
+            }
+        }
+
+        function resetBGInput(type) {
+            const bgInput = document.getElementById('bgInput' + type);
+            const noBgBtn = document.getElementById('noBgBtn' + type);
+            isNoBGMode = false;
+            if (bgInput) {
+                bgInput.type = 'number';
+                bgInput.value = '';
+                bgInput.disabled = false;
+            }
+            if (noBgBtn) noBgBtn.classList.remove('active');
+            hideAllBGAlerts(type);
+        }
+
+        function hideAllBGAlerts(type) {
+            const low = document.getElementById('lowBGAlert' + type);
+            const high = document.getElementById('highBGAlert' + type);
+            const emg = document.getElementById('emergencyBGAlert' + type);
+            if (low) low.style.display = 'none';
+            if (high) high.style.display = 'none';
+            if (emg) emg.style.display = 'none';
+        }
+
+        function checkBGAlert(type) {
+            hideAllBGAlerts(type);
+            if (isNoBGMode) return;
+
+            const bg = parseFloat(document.getElementById('bgInput' + type).value);
+            if (isNaN(bg) || bg <= 0) return;
+
+            if (bg <= 4.5) {
+                const low = document.getElementById('lowBGAlert' + type);
+                if (low) low.style.display = 'block';
+            } else if (bg >= 15.0 && bg <= 25.0) {
+                const high = document.getElementById('highBGAlert' + type);
+                if (high) high.style.display = 'block';
+            } else if (bg >= 26.0) {
+                const emg = document.getElementById('emergencyBGAlert' + type);
+                if (emg) emg.style.display = 'block';
+            }
+        }
+
+        function loadRestaurantOptions() {
+            const restSelect = document.getElementById('restaurantSelect');
+            restSelect.innerHTML = '<option value="" disabled selected>✨ 按下選擇美食 ✨</option>';
+            
+            const restIcons = {
+                "在家吃飯": "🍚",
+                "麥當勞": "🍟",
+                "KFC": "🍗",
+                "大家樂 / 大快活 / 美心MX": "🍱",
+                "吉野家": "🥩",
+                "八方雲集": "🥟",
+                "唐記 / 包點 / 蒸飯": "🥟",
+                "米線 / 湯麵": "🍜",
+                "薩莉亞": "🍕",
+                "Pizza hut": "🍕",
+                "元氣 / 爭鮮壽司": "🍣",
+                "酒樓": "🥢",
+                "韓國食品": "🇰🇷",
+                "小食": "🍢",
+                "其他餐廳": "🍽",
+                "蜜雪冰城 / 霸王茶姬 / 喜茶": "🧋",
+                "瑞幸 / Starbucks / 咖啡": "☕",
+                "飲品": "🧃"
+            };
+
+            for (let rest in menuData) {
+                const opt = document.createElement('option');
+                opt.value = rest;
+                const icon = restIcons[rest] || "😋";
+                opt.innerText = `${icon}  ${rest}`;
+                restSelect.appendChild(opt);
+            }
+            renderRestaurantFoodList();
+        }
+
+        function renderRestaurantFoodList() {
+            const restSelect = document.getElementById('restaurantSelect');
+            const foodContainer = document.getElementById('restaurantFoodContainer');
+            const foodListDiv = document.getElementById('restaurantFoodList');
+            const rest = restSelect.value;
+
+            if (!rest || !menuData[rest]) {
+                if (foodContainer) foodContainer.style.display = 'none';
+                return;
+            }
+
+            if (foodContainer) foodContainer.style.display = 'block';
+            let html = '';
+            menuData[rest].forEach((item, foodIdx) => {
+                const cartItem = cart.find(c => c.rest === rest && c.name === item.name);
+                const currentQty = cartItem ? cartItem.qty : 0;
+
+                html += `
+                    <div class="food-select-row">
+                        <div class="food-info">
+                            <strong style="font-size: 1rem; color: #00695C; display: block; line-height: 1.35; white-space: pre-line;">${colorizeSugarText(item.name)}</strong>
+                            <div style="font-size: 0.85rem; color: #D84315; font-weight: bold; margin-top: 3px;">每份: ${item.carbs} 克(g) 糖</div>
+                        </div>
+                        <div class="stepper">
+                            <button class="btn-step" onclick="changeQty(${foodIdx}, -1)">-</button>
+                            <span class="qty-val">${currentQty}</span>
+                            <button class="btn-step" onclick="changeQty(${foodIdx}, 1)">+</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            foodListDiv.innerHTML = html;
+        }
+
+        function changeQty(foodIndex, delta) {
+            const rest = document.getElementById('restaurantSelect').value;
+            if (!rest || !menuData[rest] || !menuData[rest][foodIndex]) return;
+
+            const item = menuData[rest][foodIndex];
+            const existingIndex = cart.findIndex(c => c.rest === rest && c.name === item.name);
+
+            if (existingIndex !== -1) {
+                let newQty = cart[existingIndex].qty + delta;
+                if (newQty <= 0) {
+                    cart.splice(existingIndex, 1);
+                } else {
+                    cart[existingIndex].qty = newQty;
+                    cart[existingIndex].totalCarbs = item.carbs * newQty;
+                }
+            } else if (delta > 0) {
+                cart.push({
+                    rest: rest,
+                    name: item.name,
+                    carbs: item.carbs,
+                    qty: delta,
+                    totalCarbs: item.carbs * delta
+                });
+            }
+
+            renderRestaurantFoodList();
+            renderCart();
+        }
+
+        function renderCart() {
+            const cartList = document.getElementById('cartList');
+            const totalCarbsSpan = document.getElementById('totalCarbs');
+            const cartItemCountSpan = document.getElementById('cartItemCount');
+            const scrollHint = document.getElementById('cartScrollHint');
+
+            const totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
+            if (cartItemCountSpan) cartItemCountSpan.innerText = totalQty;
+
+            if (cart.length === 0) {
+                cartList.innerHTML = `<p style="color: rgba(160, 160, 160, 0.65); font-size: 1rem; font-weight: bold; text-align: center; padding: 10px;">(沒有餐單)</p>`;
+                totalCarbsSpan.innerText = "0";
+                if (scrollHint) scrollHint.style.display = 'none';
+                return;
+            }
+
+            if (scrollHint) scrollHint.style.display = cart.length > 2 ? 'flex' : 'none';
+
+            let html = "";
+            let grandTotalCarbs = 0;
+
+            cart.forEach((item, idx) => {
+                grandTotalCarbs += item.totalCarbs;
+                html += `
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1.5px dashed #FFE0B2; padding: 10px 2px; gap: 8px;">
+                        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+                            <div>
+                                <span style="font-size: 0.75rem; font-weight: 800; color: #00695C; background: #E0F2F1; padding: 2px 8px; border-radius: 6px; display: inline-block; word-break: break-word;">${escapeHtml(item.rest)}</span>
+                            </div>
+                            <div style="font-size: 1rem; font-weight: 900; color: #1976D2; word-break: break-word; line-height: 1.35; white-space: pre-line;">${colorizeSugarText(item.name)}</div>
+                            <div style="font-size: 0.88rem; font-weight: 800; color: #D84315; margin-top: 2px; line-height: 1.3; word-break: break-word;">
+                                單份: ${item.carbs}g 糖 × ${item.qty} 份 ＝ <strong style="font-size: 0.95rem;">${item.totalCarbs}g 糖</strong>
+                            </div>
+                        </div>
+                        <button class="btn-small-danger" style="margin-top: 2px;" onclick="removeCartItem(${idx})">刪除</button>
+                    </div>
+                `;
+            });
+
+            cartList.innerHTML = html;
+            totalCarbsSpan.innerText = grandTotalCarbs;
+        }
+
+        function removeCartItem(idx) {
+            cart.splice(idx, 1);
+            renderRestaurantFoodList();
+            renderCart();
+        }
+
+        function clearCart() {
+            if (cart.length === 0) return;
+            showConfirm("確定要清空餐單嗎？", function() {
+                cart = [];
+                renderRestaurantFoodList();
+                renderCart();
+            });
+        }
+
+        function calculateInsulinMeal() {
+            const bgInputElement = document.getElementById('bgInputMeal');
+            lastCalculationTimestamp = new Date();
+
+            let grandTotalCarbs = 0;
+            cart.forEach(item => grandTotalCarbs += item.totalCarbs);
+
+            const foodDose = grandTotalCarbs / settings.cir;
+            let corrDose = 0;
+
+            if (isNoBGMode) {
+                corrDose = 0;
+                document.getElementById('resBG').innerText = "沒有數值";
+            } else {
+                const bgInput = parseFloat(bgInputElement.value);
+                
+                if (isNaN(bgInput) || bgInput <= 0) {
+                    showAlert("請先輸入有效的血糖度數\n或選擇「沒有數值」！", function() {
+                        bgInputElement.focus();
+                        bgInputElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    });
+                    return;
+                }
+
+                if (bgInput <= 4.5) {
+                    document.getElementById('resBG').innerText = bgInput.toFixed(1);
+                    document.getElementById('resCarbs').innerText = grandTotalCarbs;
+                    document.getElementById('resTotalDose').innerText = "0";
+                    document.getElementById('resCorrDose').innerText = "0.0";
+                    document.getElementById('resFoodDose').innerText = foodDose > 0 ? foodDose.toFixed(1) : "0.0";
+                    document.getElementById('doseNote').innerText = "🚨 低血糖警告 (≤ 4.5)！暫時不要注射胰島素，先吃食物，30 分鐘後再測量！";
+                    updateFoodSummaryText();
+                    switchTab('result');
+                    return;
+                }
+                corrDose = (bgInput - settings.targetBG) / settings.isf;
+                if (corrDose < 0) corrDose = 0;
+                document.getElementById('resBG').innerText = bgInput.toFixed(1);
+            }
+
+            let totalDose = foodDose + corrDose;
+            if (totalDose < 0) totalDose = 0;
+            const truncatedTotal = Math.floor(totalDose);
+
+            document.getElementById('resCarbs').innerText = grandTotalCarbs;
+            document.getElementById('resTotalDose').innerText = truncatedTotal;
+            document.getElementById('resCorrDose').innerText = corrDose > 0 ? corrDose.toFixed(1) : "0.0";
+            document.getElementById('resFoodDose').innerText = foodDose > 0 ? foodDose.toFixed(1) : "0.0";
+            document.getElementById('doseNote').innerText = "( 如進行較長時間體能/劇烈運動後，建議將胰島素注射總劑量減 -2 度(u)，為了避免延遲性低血糖現象發生 )";
+
+            updateFoodSummaryText();
+            switchTab('result');
+        }
+
+        function updateFoodSummaryText() {
+            const summaryDiv = document.getElementById('resFoodSummary');
+            if (cart.length === 0) {
+                summaryDiv.innerHTML = `<div style="text-align:center; color:rgba(160, 160, 160, 0.75); font-weight:bold; font-size:1rem; padding: 10px 0;">• 沒有進食（純血糖校正）</div>`;
+            } else {
+                summaryDiv.innerHTML = cart.map(i => `
+                    <div style="border-bottom: 1.5px dashed #C8E6C9; padding: 6px 0; word-break: break-word;">
+                        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 3px;">
+                            <span style="font-size: 0.75rem; font-weight: 800; color: #00695C; background: #E0F2F1; padding: 1px 6px; border-radius: 6px; flex-shrink: 0;">${escapeHtml(i.rest)}</span>
+                            <span style="font-size: 0.95rem; font-weight: 900; color: #1565C0; line-height: 1.35; white-space: pre-line;">${colorizeSugarText(i.name)}</span>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.85rem; font-weight: 800;">
+                            <span style="color: #455A64;">數量: ${i.qty} 份</span>
+                            <span style="color: #D84315; font-size: 0.92rem; font-weight: 900;">${i.totalCarbs}g 糖</span>
+                        </div>
+                    </div>
+                `).join("");
+            }
+        }
+
+        function openReportPage() {
+            const bg = document.getElementById('resBG').innerText;
+            const carbs = document.getElementById('resCarbs').innerText;
+            const dose = document.getElementById('resTotalDose').innerText;
+            const corrDose = document.getElementById('resCorrDose').innerText;
+            const foodDose = document.getElementById('resFoodDose').innerText;
+            const dt = formatReportDateTime();
+
+            const bgDisplay = (bg === '沒有數值') ? '沒有數值' : `${bg} mmol/L`;
+
+            let foodItemsHtml = cart.map(i => `
+                <div style="background: #F9FBE7; border: 1.5px solid #DCE775; border-radius: 16px; padding: 10px; margin-bottom: 10px; text-align: left;">
+                    <div style="margin-bottom: 4px;">
+                        <span style="font-size: 0.75rem; font-weight: 800; color: #2E7D32; background: #E8F5E9; padding: 2px 8px; border-radius: 8px; display: inline-block;">${escapeHtml(i.rest)}</span>
+                    </div>
+                    <div style="font-weight: 900; color: #1565C0; font-size: 1rem; margin-bottom: 4px; word-break: break-word; line-height: 1.35;">${colorizeSugarText(i.name.replace(/\n/g, ' '))}</div>
+                    <div style="margin-bottom: 6px;">
+                        <span style="font-size: 0.8rem; font-weight: 900; color: #E65100; background: #FFF3E0; padding: 2px 10px; border-radius: 10px; border: 1px solid #FFE0B2; display: inline-block;">× ${i.qty} 份</span>
+                    </div>
+                    <div style="font-size: 0.85rem; font-weight: 800; color: #D84315;">
+                        算式：${i.carbs} 克(g) × ${i.qty} 共 <strong style="font-size: 0.92rem; color: #C62828;">${i.totalCarbs} 克(g) 糖</strong>
+                    </div>
+                </div>
+            `).join("");
+
+            if (!cart || cart.length === 0) {
+                foodItemsHtml = `<div style="color: rgba(160, 160, 160, 0.75); padding: 12px 0; font-weight: bold; text-align: center; font-size: 0.95rem;">• 純血糖校正 (未選擇食物)</div>`;
+            }
+
+            const html = `
+                <div style="background: #FFFFFF; border: 2.5px solid #80CBC4; border-radius: 20px; padding: 14px; margin-bottom: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
+                    <div style="text-align: center; color: #1B5E20; font-weight: 900; font-size: 1.2rem; margin-bottom: 2px;">【自己計糖】</div>
+                    <div style="text-align: center; color: #2E7D32; font-weight: 900; font-size: 1.05rem; margin-bottom: 12px; border-bottom: 1.5px dashed #A5D6A7; padding-bottom: 8px;">【詩晴-胰島素計算紀錄】</div>
+                    
+                    <div style="display: flex; justify-content: space-between; font-weight: 800; padding: 4px 0; color: #37474F; font-size: 0.95rem;">
+                        <span>📅 日期：</span>
+                        <span style="color: #0D47A1; font-weight: 900;">${dt.dateStr}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-weight: 800; padding: 4px 0; color: #37474F; font-size: 0.95rem;">
+                        <span>⏰ 時間：</span>
+                        <span style="color: #0D47A1; font-weight: 900;">${dt.timeStr}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-weight: 800; padding: 4px 0; color: #37474F; font-size: 0.95rem;">
+                        <span>🩸 現時血糖：</span>
+                        <span style="color: #0D47A1; font-weight: 900;">${bgDisplay}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-weight: 800; padding: 4px 0; color: #37474F; font-size: 0.95rem;">
+                        <span>🍚 總糖 / 碳水：</span>
+                        <span style="color: #0D47A1; font-weight: 900;">${carbs} 克(g)</span>
+                    </div>
+                </div>
+
+                <div style="background: #FFFFFF; border: 2.5px solid #80CBC4; border-radius: 20px; padding: 14px; margin-bottom: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
+                    <div style="font-weight: 900; color: #00695C; font-size: 1.05rem; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                        <span>🍱 進食餐單明細：</span>
+                    </div>
+                    ${foodItemsHtml}
+                </div>
+
+                <div style="background: #FFFFFF; border: 2.5px solid #80CBC4; border-radius: 20px; padding: 14px; margin-bottom: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-weight: 800; color: #37474F; padding: 6px 0; font-size: 0.95rem;">
+                        <span>🍞 食物胰島素量：</span>
+                        <span style="color: #0D47A1; font-size: 1.1rem; font-weight: 900;">${foodDose} 度(u)</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-weight: 800; color: #37474F; padding: 6px 0; font-size: 0.95rem;">
+                        <span>🎯 血糖校正劑量：</span>
+                        <span style="color: #0D47A1; font-size: 1.1rem; font-weight: 900;">${corrDose} 度(u)</span>
+                    </div>
+                    
+                    <div style="background: #E8F5E9; border: 2px solid #81C784; padding: 10px 14px; border-radius: 16px; display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                        <span style="font-weight: 900; color: #1B5E20; font-size: 1rem;">建議注射總劑量：</span>
+                        <span style="font-weight: 900; color: #D32F2F; font-size: 1.4rem;">${dose} 度(u)</span>
+                    </div>
+                </div>
+
+                <div style="background: #FFFFFF; border: 2.5px solid #80CBC4; border-radius: 20px; padding: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
+                    <div style="font-weight: 900; color: #00695C; margin-bottom: 8px; font-size: 1rem; display: flex; align-items: center; gap: 6px;">
+                        <span>⚙ 個人參數底稿：</span>
+                    </div>
+                    <div style="color: #424242; font-weight: 700; padding-left: 6px; font-size: 0.92rem; line-height: 1.7;">
+                        • 目標血糖：<strong>${settings.targetBG} mmol/L</strong><br>
+                        • 敏感係數 (ISF)：<strong>1 度(u) : ${settings.isf} mmol/L</strong><br>
+                        • 碳胰比 (ICR)：<strong>1 度(u) : ${settings.cir} 克(g)</strong>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('fullReportContentContainer').innerHTML = html;
+            switchTab('report-detail');
+        }
+
+        function calculateCorrectionOnly() {
+            const bgInputEl = document.getElementById('bgInputCorr');
+            const bgVal = parseFloat(bgInputEl.value);
+            
+            if (isNaN(bgVal) || bgVal <= 0) {
+                showAlert("請先輸入有效的血糖度數！", function() {
+                    bgInputEl.focus();
+                });
+                return;
+            }
+
+            lastCalculationTimestamp = new Date();
+            const dt = formatReportDateTime();
+
+            let corrDose = 0;
+            const lowAlertCard = document.getElementById('corrResultLowBGAlert');
+            const doseHeader = document.getElementById('corrDoseHeader');
+
+            if (bgVal <= 4.5) {
+                corrDose = 0;
+                if (lowAlertCard) lowAlertCard.style.display = 'block';
+                if (doseHeader) {
+                    doseHeader.innerHTML = '🚨 低血糖 (≤ 4.5)<br><span style="color: #C62828;">不要追加劑量</span>';
+                }
+            } else {
+                corrDose = (bgVal - settings.targetBG) / settings.isf;
+                if (corrDose < 0) corrDose = 0;
+                if (lowAlertCard) lowAlertCard.style.display = 'none';
+                if (doseHeader) {
+                    doseHeader.innerHTML = '建議追加速效劑量';
+                }
+            }
+
+            document.getElementById('corrResDoseVal').innerText = Math.floor(corrDose);
+            document.getElementById('corrResDate').innerText = dt.dateStr;
+            document.getElementById('corrResTime').innerText = dt.timeStr;
+            document.getElementById('corrResBGVal').innerText = bgVal.toFixed(1);
+            document.getElementById('corrResTargetVal').innerText = settings.targetBG;
+            document.getElementById('corrResISFVal').innerText = settings.isf;
+
+            switchTab('corr-result');
+        }
+
+        function shareCorrResult(platform) {
+            const dose = document.getElementById('corrResDoseVal').innerText;
+            const bg = document.getElementById('corrResBGVal').innerText;
+            const target = document.getElementById('corrResTargetVal').innerText;
+            const isf = document.getElementById('corrResISFVal').innerText;
+            const dt = formatReportDateTime();
+
+            const bgNum = parseFloat(bg);
+            let lowNote = "";
+            if (!isNaN(bgNum) && bgNum <= 4.5) {
+                lowNote = "\n🚨 低血糖警告 (≤ 4.5)：切勿追加胰島素，請即時補充糖份！";
+            }
+
+            const text = `【自己計糖】\n【詩晴-追加速效胰島素紀錄】\n📅 日期: ${dt.dateStr}\n⏰ 時間: ${dt.timeStr}\n🩸 現時血糖: ${bg} mmol/L\n🎯 目標血糖: ${target} mmol/L\n⚡ 敏感係數 (ISF): 1 度 : ${isf} mmol/L\n\n💉 建議追加速效劑量: ${dose} 度(u)${lowNote}\n(僅供不進食情況下追加校正血糖使用)`;
+
+            if (platform === 'wa') {
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+            } else if (platform === 'email') {
+                window.location.href = `mailto:?subject=${encodeURIComponent("詩晴-追加速效胰島素紀錄")}&body=${encodeURIComponent(text)}`;
+            }
+        }
+
+        function calculateBedtimeDose(showModalAlert = false) {
+            const bgInputEl = document.getElementById('bgInputBedtime');
+            const bgVal = parseFloat(bgInputEl.value);
+
+            if (isNaN(bgVal) || bgVal < 0) {
+                showAlert("請先輸入有效的睡前血糖數值！", function() {
+                    bgInputEl.focus();
+                });
+                return;
+            }
+
+            lastCalculationTimestamp = new Date();
+            const dt = formatReportDateTime();
+
+            let matchedRule = bedtimeRules.find(r => bgVal >= r.min && bgVal <= r.max);
+            if (!matchedRule) {
+                matchedRule = bedtimeRules[bedtimeRules.length - 1];
+            }
+
+            const headerEl = document.getElementById('bedtimeDoseHeader');
+            const lowAlertCard = document.getElementById('bedtimeResultLowBGAlert');
+            const rapidNote = document.getElementById('bedtimeResRapidNote');
+
+            if (matchedRule.isLowAlert || bgVal <= 4.5) {
+                if (lowAlertCard) lowAlertCard.style.display = 'block';
+                if (headerEl) {
+                    headerEl.innerHTML = '🚨 睡前低血糖 (≤ 4.5)<br><span style="color: #C62828;">請即時補充小食</span>';
+                }
+            } else {
+                if (lowAlertCard) lowAlertCard.style.display = 'none';
+                if (headerEl) {
+                    headerEl.innerHTML = '建議睡前長效劑量<br>與小食';
+                }
+            }
+
+            document.getElementById('bedtimeResLongDoseVal').innerText = matchedRule.longDose;
+            document.getElementById('bedtimeResDrinkVal').innerHTML = colorizeSugarText(matchedRule.drink || "無");
+            document.getElementById('bedtimeResFoodVal').innerHTML = colorizeSugarText(matchedRule.food || "無");
+
+            if (matchedRule.rapidDose && matchedRule.rapidDose > 0) {
+                document.getElementById('bedtimeResRapidDoseVal').innerText = matchedRule.rapidDose;
+                rapidNote.style.display = 'block';
+            } else {
+                rapidNote.style.display = 'none';
+            }
+
+            document.getElementById('bedtimeResDate').innerText = dt.dateStr;
+            document.getElementById('bedtimeResTime').innerText = dt.timeStr;
+            document.getElementById('bedtimeResBGVal').innerText = bgVal.toFixed(1);
+
+            switchTab('bedtime-result');
+        }
+
+        function shareBedtimeResult(platform) {
+            const longDose = document.getElementById('bedtimeResLongDoseVal').innerText;
+            const bg = document.getElementById('bedtimeResBGVal').innerText;
+            
+            const drinkText = document.getElementById('bedtimeResDrinkVal').innerText;
+            const foodText = document.getElementById('bedtimeResFoodVal').innerText;
+            const dt = formatReportDateTime();
+
+            const rapidNote = document.getElementById('bedtimeResRapidNote');
+            let rapidText = "";
+            if (rapidNote && rapidNote.style.display !== 'none') {
+                const rapidDose = document.getElementById('bedtimeResRapidDoseVal').innerText;
+                rapidText = `\n⚠️ 特別註明：需要加入注射「(速效)胰島素」劑量：${rapidDose} 度(u)`;
+            }
+
+            const bgNum = parseFloat(bg);
+            let lowNote = "";
+            if (!isNaN(bgNum) && bgNum <= 4.5) {
+                lowNote = "\n🚨 睡前低血糖警告 (≤ 4.5)：長效劑量建議注射 0 度(u)，請即時補充睡前小食！";
+            }
+
+            const text = `【自己計糖】\n【詩晴-睡前長效胰島素與小食紀錄】\n📅 日期: ${dt.dateStr}\n⏰ 時間: ${dt.timeStr}\n🩸 現時睡前血糖: ${bg} mmol/L\n\n🌙 建議 24 小時長效劑量: ${longDose} 度(u)${rapidText}${lowNote}\n\n🍿 建議睡前小食:\n   • 飲品: ${drinkText}\n   • 食品: ${foodText}`;
+
+            if (platform === 'wa') {
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+            } else if (platform === 'email') {
+                window.location.href = `mailto:?subject=${encodeURIComponent("詩晴-睡前長效胰島素與小食紀錄")}&body=${encodeURIComponent(text)}`;
+            }
+        }
+
+        function openBedtimeSettings() {
+            renderBedtimeRulesAdmin();
+            switchTab('bedtime-settings');
+        }
+
+        function renderBedtimeRulesAdmin() {
+            const container = document.getElementById('bedtimeRulesAdminList');
+            let html = '';
+
+            bedtimeRules.forEach((rule, idx) => {
+                html += `
+                    <div class="rule-edit-card">
+                        <div style="font-weight:900; color:#4A148C; font-size: 1.1rem; margin-bottom:8px; line-height:1.35;">區間 ${idx+1}：血糖 ${escapeHtml(rule.label)} (mmol/L)</div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                            <div style="min-width:0;">
+                                <label style="font-size:0.9rem; font-weight:800; margin:0 0 4px 0; color:#1B5E20; display:block; line-height:1.2;">24小時<br>長效劑量 (u):</label>
+                                <input type="number" id="rule_long_${idx}" value="${rule.longDose}" style="padding:10px; font-size:16px; border:2px solid #CE93D8; border-radius:12px;">
+                            </div>
+                            <div style="min-width:0;">
+                                <label style="font-size:0.9rem; font-weight:800; margin:0 0 4px 0; color:#D32F2F; display:block; line-height:1.2;">追加<br>速效劑量 (u):</label>
+                                <input type="number" id="rule_rapid_${idx}" value="${rule.rapidDose || 0}" style="padding:10px; font-size:16px; border:2px solid #CE93D8; border-radius:12px;">
+                            </div>
+                        </div>
+                        <div style="margin-top:10px;">
+                            <label style="font-size:0.9rem; font-weight:800; margin:0 0 4px 0; color:#0D47A1;">🥤 睡前飲品:</label>
+                            <input type="text" id="rule_drink_${idx}" value="${escapeHtml(rule.drink)}" style="padding:10px; font-size:16px; border:2px solid #CE93D8; border-radius:12px;">
+                        </div>
+                        <div style="margin-top:10px;">
+                            <label style="font-size:0.9rem; font-weight:800; margin:0 0 4px 0; color:#0D47A1;">🍪 睡前食品:</label>
+                            <input type="text" id="rule_food_${idx}" value="${escapeHtml(rule.food)}" style="padding:10px; font-size:16px; border:2px solid #CE93D8; border-radius:12px;">
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        function saveBedtimeRulesAdmin() {
+            bedtimeRules.forEach((rule, idx) => {
+                const longVal = parseFloat(document.getElementById(`rule_long_${idx}`).value);
+                const rapidVal = parseFloat(document.getElementById(`rule_rapid_${idx}`).value);
+                const drinkVal = document.getElementById(`rule_drink_${idx}`).value.trim();
+                const foodVal = document.getElementById(`rule_food_${idx}`).value.trim();
+
+                if (!isNaN(longVal)) rule.longDose = longVal;
+                if (!isNaN(rapidVal)) rule.rapidDose = rapidVal;
+                rule.drink = drinkVal;
+                rule.food = foodVal;
+            });
+
+            localStorage.setItem("sugar_bedtime_rules", JSON.stringify(bedtimeRules));
+            showAlert("✅ 24小時長效參數已成功儲存！");
+        }
+
+        function resetBedtimeRulesAdmin() {
+            showConfirm("將長效參數還原為出廠預設值嗎？", function() {
+                bedtimeRules = JSON.parse(JSON.stringify(HARDCODED_BEDTIME_RULES));
+                localStorage.setItem("sugar_bedtime_rules", JSON.stringify(bedtimeRules));
+                renderBedtimeRulesAdmin();
+                showAlert("🔄 已還原為出廠預設長效規則！");
+            });
+        }
+
+        function initSettingsUI() {
+            document.getElementById('targetBG').value = settings.targetBG;
+            document.getElementById('cirInput').value = settings.cir;
+            document.getElementById('isfInput').value = settings.isf;
+        }
+
+        function saveSettings() {
+            const tBG = parseFloat(document.getElementById('targetBG').value);
+            const cir = parseFloat(document.getElementById('cirInput').value);
+            const isf = parseFloat(document.getElementById('isfInput').value);
+
+            if (isNaN(tBG) || isNaN(cir) || isNaN(isf)) {
+                showAlert("⚠️ 請輸入有效的參數數字！");
+                return;
+            }
+
+            settings.targetBG = tBG;
+            settings.cir = cir;
+            settings.isf = isf;
+            localStorage.setItem("sugar_settings", JSON.stringify(settings));
+            showAlert("✅ 個人參數已成功儲存！");
+        }
+
+        function resetSettings() {
+            showConfirm("將個人參數還原為預設值嗎？\n( 目標血糖: 6 , ISF: 3 , ICR: 5 )", function() {
+                settings = Object.assign({}, DEFAULT_SETTINGS);
+                localStorage.setItem("sugar_settings", JSON.stringify(settings));
+                initSettingsUI();
+                showAlert("🔄 已成功還原為預設個人參數！");
+            });
+        }
+
+        function renderMenuManageList() {
+            const list = document.getElementById('menuManageList');
+            let html = "";
+            
+            for (let rest in menuData) {
+                html += `
+                    <div style="background: #E0F2F1; border: 1.5px solid #80CBC4; border-radius: 12px; padding: 6px 12px; font-weight:900; color:#00695C; margin-top:10px; margin-bottom:6px; font-size:1rem; display:flex; align-items:center; gap:6px;">
+                        <span>📍 ${escapeHtml(rest)}</span>
+                    </div>
+                `;
+                menuData[rest].forEach((item, idx) => {
+                    const cleanRest = escapeHtml(rest).replace(/'/g, "\\'");
+                    html += `
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #E0E0E0; padding:8px 4px; gap:8px;">
+                            <div style="flex:1; min-width:0; word-break:break-word;">
+                                <div style="font-weight:800; font-size:0.95rem; color:#263238; line-height:1.35; white-space: pre-line;">${colorizeSugarText(item.name)}</div>
+                                <div style="font-size:0.82rem; font-weight:800; color:#D84315; margin-top:2px;">${item.carbs} 克(g) 糖</div>
+                            </div>
+                            <button class="btn-small-danger" style="flex-shrink:0;" onclick="removeFoodItem('${cleanRest}', ${idx})">刪除</button>
+                        </div>
+                    `;
+                });
+            }
+            if (html === "") {
+                html = '<div style="text-align:center; color:#9E9E9E; padding:15px; font-weight:bold;">(目前資料庫沒有食品)</div>';
+            }
+            list.innerHTML = html;
+        }
+
+        function resetDefaultMenu() {
+            showConfirm("還原預設食品資料庫數據嗎？\n(注意：新增的自訂食品亦會被重置)", function() {
+                menuData = JSON.parse(JSON.stringify(HARDCODED_DEFAULT_MENU));
+                localStorage.setItem("sugar_menu_v6", JSON.stringify(menuData));
+                loadRestaurantOptions();
+                renderMenuManageList();
+                showAlert("🔄 食品資料庫已成功還原\n為預設值！");
+            });
+        }
+
+        function exportMenuData() {
+            try {
+                const jsonStr = JSON.stringify(menuData, null, 2);
+                const blob = new Blob([jsonStr], { type: "application/json;charset=utf-8;" });
+                const url = URL.createObjectURL(blob);
+                const downloadAnchor = document.createElement('a');
+                const todayStr = new Date().toISOString().slice(0, 10);
+                
+                downloadAnchor.setAttribute("href", url);
+                downloadAnchor.setAttribute("download", `詩晴自己計糖_食品資料庫備份_${todayStr}.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            } catch(e) {
+                showAlert("❌ 匯出失敗：" + e.message);
+            }
+        }
+
+        function importMenuData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (typeof imported !== 'object' || imported === null || Array.isArray(imported)) {
+                        throw new Error("格式不符合資料庫要求");
+                    }
+                    showConfirm("要匯入此 JSON 食品資料庫檔案嗎？\n這樣將會直接修改現有的食品資料庫內容。", function() {
+                        menuData = imported;
+                        localStorage.setItem("sugar_menu_v6", JSON.stringify(menuData));
+                        loadRestaurantOptions();
+                        renderMenuManageList();
+                        showAlert("✅ 食品資料庫已成功匯入！");
+                    });
+                } catch(err) {
+                    showAlert("❌ 匯入失敗，請確認檔案為正確的 JSON 格式！");
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function addCustomFoodPrompt() {
+            const rest = document.getElementById('manageRestName').value.trim();
+            const food = document.getElementById('manageFoodName').value.trim();
+            const carbs = parseFloat(document.getElementById('manageFoodCarbs').value);
+
+            if (!rest || !food || isNaN(carbs)) {
+                showAlert("⚠️ 請完整填寫餐廳、食品名稱\n與碳水數值！");
+                return;
+            }
+
+            if (!menuData[rest]) menuData[rest] = [];
+            menuData[rest].push({ name: food, carbs: carbs });
+            localStorage.setItem("sugar_menu_v6", JSON.stringify(menuData));
+
+            loadRestaurantOptions();
+            renderMenuManageList();
+            document.getElementById('manageRestName').value = '';
+            document.getElementById('manageFoodName').value = '';
+            document.getElementById('manageFoodCarbs').value = '';
+            showAlert("✅ 已成功新增食品！");
+        }
+
+        function removeFoodItem(rest, idx) {
+            if (!menuData[rest]) return;
+            menuData[rest].splice(idx, 1);
+            if (menuData[rest].length === 0) delete menuData[rest];
+            localStorage.setItem("sugar_menu_v6", JSON.stringify(menuData));
+            loadRestaurantOptions();
+            renderMenuManageList();
+        }
+
+        function shareResult(platform) {
+            const bg = document.getElementById('resBG').innerText;
+            const carbs = document.getElementById('resCarbs').innerText;
+            const dose = document.getElementById('resTotalDose').innerText;
+            const corrDose = document.getElementById('resCorrDose').innerText;
+            const foodDose = document.getElementById('resFoodDose').innerText;
+            const dt = formatReportDateTime();
+
+            let foodText = "";
+            if (cart && cart.length > 0) {
+                foodText = cart.map(i => {
+                    const cleanName = i.name.replace(/\n/g, ' ');
+                    return `📍 ${i.rest}\n   • 食品：${cleanName}\n   • 數量：${i.qty} 份\n   • 算式：${i.carbs}g × ${i.qty} 份 = ${i.totalCarbs}g 糖`;
+                }).join("\n\n");
+            } else {
+                foodText = "• 純血糖校正 (未選擇食物)";
+            }
+
+            const text = `【自己計糖】\n【詩晴-胰島素計算紀錄】\n📅 日期: ${dt.dateStr}\n⏰ 時間: ${dt.timeStr}\n🩸 現時血糖: ${bg}${bg !== '沒有數值' ? ' mmol/L' : ''}\n🍚 總糖 / 碳水: ${carbs} 克(g)\n\n🍱 進食餐單明細:\n${foodText}\n\n🍞 食物胰島素量: ${foodDose} 度(u)\n🎯 血糖校正劑量: ${corrDose} 度(u)\n💉 建議注射總劑量: ${dose} 度(u)\n\n⚙️ 個人參數底稿:\n• 目標血糖: ${settings.targetBG} mmol/L\n• 敏感係數 (ISF): 1 度(u) : ${settings.isf} mmol/L\n• 碳胰比 (ICR): 1 度(u) : ${settings.cir} 克(g)`;
+
+            if (platform === 'wa') {
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+            } else if (platform === 'email') {
+                window.location.href = `mailto:?subject=${encodeURIComponent("詩晴-胰島素計算紀錄")}&body=${encodeURIComponent(text)}`;
+            }
+        }
+    </script>
+</body>
+</html>
